@@ -59,3 +59,6 @@ By signing below, we acknowledge that we have read, discussed, and agreed to the
 Team Member Signatures:
 
 Andrew Tu
+Matteo Grassia
+Arush Gupta
+Reuben Kurian Mathew

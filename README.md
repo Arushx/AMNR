@@ -11,3 +11,13 @@ The readme should include information such as:
 By keeping this README up-to-date,
 your team will find it easier to prepare for the final presentation
 at the end of the term.
+
+## Project Ideas
+- Online NERT engine
+- Bloomberg terminal esque trading research application
+
+### NERT
+- Can use Supabase Realtime to manage multiplayer
+
+### Joomberg
+- Can use [alphavantage](https://www.alphavantage.co/) for stock stock information.

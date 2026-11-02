@@ -21,3 +21,15 @@ at the end of the term.
 
 ### Joomberg
 - Can use [alphavantage](https://www.alphavantage.co/) for stock stock information.
+- This is our project
+
+## Joomberg MVP
+- Lookup any stock ticker
+  - View fundamentals
+  - Pricing Graph
+
+## Futher features
+- News aggregation
+- Data analysis
+- Paper trading
+

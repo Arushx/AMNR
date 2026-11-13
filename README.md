@@ -23,6 +23,12 @@ at the end of the term.
 - Can use [alphavantage](https://www.alphavantage.co/) for stock stock information.
 - This is our project
 
+## User Stories
+- As a User, I want to be able to look up company's financial information,
+  so that I can understand how is the company performs recently.
+- As a User, I want to look up the stock performance graph for the company, so that
+  I can make more informed investment decision
+
 ## Joomberg MVP
 - Lookup any stock ticker
   - View fundamentals

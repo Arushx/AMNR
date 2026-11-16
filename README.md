@@ -2,8 +2,8 @@
 ## Team Information
 ### Team Members
 - Arush Gupta
-- Member 2
-- Member 3
+- Matteo Grassia
+- Reuben Kurian Mathew
 - Andrew Tu
 ---
 ## Project Description
@@ -17,13 +17,28 @@ As a retail investor, I want to search for a stock by ticker symbol or company n
 ### User Story 2
 As a retail investor, I want to add and remove stocks from a saved watchlist so I can monitor them without searching for them each time.
 ### User Story 3
-As a retail investor, I want to learn what made the stock price change for specific direction from the news
+As a retail investor, I want to determine if two stocks trade in pairs.
+### User Story 4
+As a retail investor, I want to search for historical stock data so I can forecast future performance.
+### User Story 5
+As a retail investor, I want to relate the peaks and dips of each stock to a popular news event that occurred at that moment so that I can find out why the stock price fluctuated.
+
 (Add additional user stories as needed.)
 ---
 ## Use Cases
 ### Use Case 1
+Search stocks by name and ticker and view historical data.
 ### Use Case 2
-### Use the natural language processing to identify the semantic of the news that may affect the stock price for the given time period.
+Save stocks to a watchlist for easy reference/monitoring
+### Use Case 3
+Compare historical data for two stocks and calculate correlations between the stocks.
+### Use Case 4
+View stock data for a specified date range.
+### Use Case 5
+Tell the user of popular news events that occurred at the moment a specific stock peaked or dipped.
+### Use Case 6
+View past strategies and view strategy performance.
+
 (Add additional use cases as needed.)
 ---
 ## Minimal Viable Product (MVP)
@@ -35,6 +50,7 @@ As a retail investor, I want to learn what made the stock price change for speci
 ---
 ## Entities
 ### Entity 1
+Stock
 ### Entity 2
 (Add additional entities as needed.)
 ---

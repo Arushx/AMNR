@@ -8,8 +8,10 @@
 ---
 ## Project Description
 ### Domain
-[Our project will aim to provide a Bloomberg terminal experience were you can view live financial stock data through a visual and interactable graph
-that contains key terminal tools such as date ranges, stock selection by indicator, and watchlists ]
+Our project aims to provide a finance terminal experience that gives users a comprehensive view of stock market data. Users will be able to search for stocks, create saved watchlists, and explore historical prices through interactive graphs with customizable date ranges. They will also be able to compare multiple stocks, analyze correlations, and view news events alongside significant price movements to help contextualize market activity.
+
+We also aim to provide a backtesting system that allows users to evaluate quantitative trading strategies suite, such as pairs trading and moving-average crossover strategies, using historical stock data. Users will be able to configure strategy parameters, select a testing period and initial investment, and evaluate simulated performance through portfolio value graphs, trade histories, and metrics such as total return and maximum drawdown. 
+By saving strategies and comparing their results against a buy-and-hold benchmark, users can explore how different approaches would have performed under past market conditions.
 ---
 ## User Stories
 ### User Story 1

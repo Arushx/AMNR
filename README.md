@@ -36,6 +36,10 @@ Compare historical data for two stocks and calculate correlations between the st
 View stock data for a specified date range.
 ### Use Case 5
 Tell the user of popular news events that occurred at the moment a specific stock peaked or dipped.
+### Use Case 6
+View past strategies and view strategy performance.
+
+>>>>>>> a4bfc7d90a96e6b3cfe6b951e1a9b96358140b36
 
 (Add additional use cases as needed.)
 ---

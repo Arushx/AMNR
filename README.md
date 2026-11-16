@@ -18,17 +18,25 @@ As a retail investor, I want to search for a stock by ticker symbol or company n
 As a retail investor, I want to add and remove stocks from a saved watchlist so I can monitor them without searching for them each time.
 ### User Story 3
 As a retail investor, I want to determine if two stocks trade in pairs.
-...
+### User Story 4
 As a retail investor, I want to search for historical stock data so I can forecast future performance.
+### User Story 5
+As a retail investor, I want to relate the peaks and dips of each stock to a popular news event that occurred at that moment so that I can find out why the stock price fluctuated.
+
 (Add additional user stories as needed.)
 ---
 ## Use Cases
 ### Use Case 1
 Search stocks by name and ticker and view historical data.
 ### Use Case 2
-Compare historical data for two stocks and calculate correlations between the stocks.
+Save stocks to a watchlist for easy reference/monitoring
 ### Use Case 3
+Compare historical data for two stocks and calculate correlations between the stocks.
+### Use Case 4
 View stock data for a specified date range.
+### Use Case 5
+Tell the user of popular news events that occurred at the moment a specific stock peaked or dipped.
+
 (Add additional use cases as needed.)
 ---
 ## Minimal Viable Product (MVP)

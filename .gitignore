@@ -36,3 +36,10 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### IntelliJ IDEA (whole folder: each teammate keeps their own IDE settings) ###
+.idea/
+
+### Secrets (API keys go in env vars or a local .env, never in Git) ###
+.env
+*.env

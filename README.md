@@ -1,41 +1,54 @@
-# Team Project
-
-Please keep this up-to-date with information about your project throughout the term.
-
-The readme should include information such as:
-- a summary of what your application is all about
-- a list of the user stories, along with who is responsible for each one
-- information about the API(s) that your project uses 
-- screenshots or animations demonstrating current functionality
-
-By keeping this README up-to-date,
-your team will find it easier to prepare for the final presentation
-at the end of the term.
-
-## Project Ideas
-- Online NERT engine
-- Bloomberg terminal esque trading research application
-
-### NERT
-- Can use Supabase Realtime to manage multiplayer
-
-### Joomberg
-- Can use [alphavantage](https://www.alphavantage.co/) for stock stock information.
-- This is our project
-
+# Project Name
+## Team Information
+### Team Members
+- Arush Gupta
+- Member 2
+- Member 3
+- Member 4
+---
+## Project Description
+### Domain
+[Our project will aim to provide a Bloomberg terminal experience were you can view live financial stock data through a visual and interactable graph
+that contains key terminal tools such as date ranges, stock selection by indicator, and watchlists ]
+---
 ## User Stories
-- As a User, I want to be able to look up company's financial information,
-  so that I can understand how is the company performs recently.
-- As a User, I want to look up the stock performance graph for the company, so that
-  I can make more informed investment decision
-
-## Joomberg MVP
-- Lookup any stock ticker
-  - View fundamentals
-  - Pricing Graph
-
-## Futher features
-- News aggregation
-- Data analysis
-- Paper trading
-
+### User Story 1
+As a retail investor, I want to search for a stock by ticker symbol or company name so I can quickly find its latest available quote.
+### User Story 2
+As a retail investor, I want to add and remove stocks from a saved watchlist so I can monitor them without searching for them each time.
+### User Story 3
+...
+(Add additional user stories as needed.)
+---
+## Use Cases
+### Use Case 1
+### Use Case 2
+### Use Case 3
+(Add additional use cases as needed.)
+---
+## Minimal Viable Product (MVP)
+| Team Member | MVP Use Case |
+|-------------|--------------|
+| Name | Use Case |
+| Name | Use Case |
+| Name | Use Case |
+---
+## Entities
+### Entity 1
+### Entity 2
+(Add additional entities as needed.)
+---
+## API Usage
+**API Name:**
+**Documentation:** [Link]
+**How it is used in the program:**
+---
+## Design Diagrams
+### UML Class Diagram
+### Sequence Diagrams
+---
+## How to Run
+[Instructions for running the program.]
+---
+## Notes
+[Any additional project information.]

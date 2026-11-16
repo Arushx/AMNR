@@ -2,7 +2,7 @@
 ## Team Information
 ### Team Members
 - Arush Gupta
-- Member 2
+- Matteo Grassia
 - Member 3
 - Member 4
 ---
@@ -18,12 +18,14 @@ As a retail investor, I want to search for a stock by ticker symbol or company n
 As a retail investor, I want to add and remove stocks from a saved watchlist so I can monitor them without searching for them each time.
 ### User Story 3
 ...
+As a retail investor, I want to search for historical stock data so I can forecast future performance.
 (Add additional user stories as needed.)
 ---
 ## Use Cases
 ### Use Case 1
 ### Use Case 2
 ### Use Case 3
+View stock data for a specified date range.
 (Add additional use cases as needed.)
 ---
 ## Minimal Viable Product (MVP)
@@ -35,6 +37,7 @@ As a retail investor, I want to add and remove stocks from a saved watchlist so 
 ---
 ## Entities
 ### Entity 1
+Stock
 ### Entity 2
 (Add additional entities as needed.)
 ---

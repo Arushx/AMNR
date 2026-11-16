@@ -1,0 +1,9 @@
+@startuml
+View->StockSearchController: user searches for stock
+StockSearchController -> StockSearchUseCaseInteractor: execute()
+StockSearchUseCaseInteractor -> StockDataAccessObject: execute()
+StockDataAccessObject -> StockSearchUseCaseInteractor: Stock
+StockSearchUseCaseInteractor -> StockDataPresenter
+StockPresenter -> StockViewModel
+StockViewModel -> View: onUpdate()
+@enduml

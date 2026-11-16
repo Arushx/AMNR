@@ -1,0 +1,23 @@
+@startuml
+
+Stock: +symbol: String
+Stock: -priceData: ArrayList<PriceData>
+
+
+PriceData: +open double
+PriceData: +high double
+PriceData: +low double
+PriceData: +volume: long
+PriceData: +timestamp str
+
+Portfolio: 
+
+Strategy:
+
+Pair: +a: Stock
+Pair: +b: Stock
+Pair: +startDate: str
+Pair: +endDate: str
+Pair: +correlation: float
+
+@enduml

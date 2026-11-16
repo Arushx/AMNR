@@ -4,7 +4,7 @@
 - Arush Gupta
 - Member 2
 - Member 3
-- Member 4
+- Andrew Tu
 ---
 ## Project Description
 ### Domain
@@ -17,13 +17,13 @@ As a retail investor, I want to search for a stock by ticker symbol or company n
 ### User Story 2
 As a retail investor, I want to add and remove stocks from a saved watchlist so I can monitor them without searching for them each time.
 ### User Story 3
-...
+As a retail investor, I want to learn what made the stock price change for specific direction from the news
 (Add additional user stories as needed.)
 ---
 ## Use Cases
 ### Use Case 1
 ### Use Case 2
-### Use Case 3
+### Use the natural language processing to identify the semantic of the news that may affect the stock price for the given time period.
 (Add additional use cases as needed.)
 ---
 ## Minimal Viable Product (MVP)

@@ -29,6 +29,9 @@ Search stocks by name and ticker and view historical data.
 Compare historical data for two stocks and calculate correlations between the stocks.
 ### Use Case 3
 View stock data for a specified date range.
+### Use Case 4
+View past strategies and view strategy performance.
+
 (Add additional use cases as needed.)
 ---
 ## Minimal Viable Product (MVP)

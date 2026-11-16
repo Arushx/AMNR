@@ -134,3 +134,24 @@ what we added, and what I learned.
 - `between()` returns a **new** `PriceHistory` instead of changing the old one.
 - Peak/dip methods are there for story 5 (news at peaks and dips); `between()` is for story 4 (date ranges).
 - Entity tests are plain unit tests: no fakes needed, because entities depend on nothing.
+
+---
+
+## 8. Alpha Vantage client (data_access)
+
+**Added** (`src/main/java/data_access/`):
+- `AlphaVantageClient`: builds the request URL (with the API key), sends it with OkHttp, and returns the JSON. Methods: `fetchGlobalQuote(symbol)`, `fetchDailyTimeSeries(symbol)`. Throws if the key is missing.
+- `AlphaVantageParser`: turns that JSON into our entities (`parseQuote` → `Quote`, `parseDailyHistory` → `PriceHistory`). All of Alpha Vantage's key names (`"05. price"`, `"4. close"`, ...) are constants here.
+- `AlphaVantageException`: one checked exception for every failure (no network, bad key, limit hit, unknown symbol, weird format), with a message safe to show the user.
+- Tests: `AlphaVantageParserTest` uses **saved real responses** in `src/test/resources/alphavantage/`, so it never uses up requests. `AlphaVantageClientTest.fetchesRealQuote` calls the real API, but only runs when `ALPHA_VANTAGE_API_KEY` is set (it costs 1 request).
+- CheckStyle: turned off only the `PackageName` rule, because Google style bans `_` but the course layout uses `data_access` / `use_case`.
+
+**Learned:**
+- **SRP split:** the client changes if *how we talk to the API* changes; the parser changes if *the JSON format* changes. Different reasons to change, so different classes. It also makes the parser testable without the internet.
+- **Errors come as HTTP 200**, so `checkForApiError` looks for `"Error Message"`, `"Information"` or `"Note"` in the JSON. An unknown symbol comes back as an empty `"Global Quote": {}`.
+- **Exception wrapping:** low-level errors (`IOException`, `JSONException`, `NumberFormatException`) are caught and rethrown as `AlphaVantageException(message, cause)`, so callers deal with one type and the original cause is kept for debugging.
+- `try (Response response = ...)` is **try-with-resources**: it closes the network connection automatically.
+- `HttpUrl.Builder.addQueryParameter` encodes the URL safely (spaces, symbols like `BRK.B`).
+- Bad data that breaks an entity rule (e.g. a price of 0) is also treated as a bad response.
+
+**Not done yet:** nothing calls this from `AppBuilder`; it will be used by the DAO that implements a use case's data access interface.

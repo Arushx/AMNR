@@ -64,7 +64,24 @@ Stock
 ### Sequence Diagrams
 ---
 ## How to Run
-[Instructions for running the program.]
+Requires JDK 11+ and Maven.
+
+1. Clone the repo and open it in IntelliJ as a Maven project.
+2. Run `app.Main` (or `mvn compile exec:java -Dexec.mainClass=app.Main`).
+3. `mvn compile` also runs CheckStyle (Google Java Style); fix any reported violations before opening a PR.
+   To see the same warnings in IntelliJ, install CheckStyle-IDEA, add `checkstyle/google_checks.xml`, and set the version to 10.26.1.
+
+API keys go in environment variables (or a local `.env`, which is git-ignored), never in source code.
+
+### Package layout (Clean Architecture)
+| Package | Layer | Contains |
+|---|---|---|
+| `entity` | Enterprise Business Rules | Domain objects (e.g. `Stock`) |
+| `use_case/<name>` | Application Business Rules | Interactor, input/output boundaries and data, data access interface |
+| `interface_adapter/<name>` | Interface Adapters | Controller, presenter, view model, state |
+| `view` | Frameworks & Drivers | Swing views |
+| `data_access` | Frameworks & Drivers | API clients and file persistence |
+| `app` | Main component | `Main` and `AppBuilder`, which wire everything together |
 ---
 ## Notes
 [Any additional project information.]

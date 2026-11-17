@@ -422,3 +422,19 @@ Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → prese
 - My key works (the quote request succeeded), so the README's "pending" line can be updated.
 
 **Update:** after the fix, the live search works with my key. README updated: the API is confirmed working with our own key, and it now lists both limits (25/day, 1/second). Idea for later if the daily limit becomes a problem: take the quote from the daily history, so each search uses 1 request instead of 2.
+
+---
+
+## 27. Overview: everything in Use Case 1
+
+**Scenario A, "apple"** (0 API requests): controller → interactor → listing DAO (saved CSV, or download once) → parser → `StockDirectory` → not a ticker → `searchByName` top 5 → `prepareMatchesView` → presenter makes labels → view model notifies the view.
+
+**Scenario B, pick "1" / "AAPL"** (2 requests): controller → interactor → known ticker → DAO `getQuote` (GLOBAL_QUOTE) + `getDailyHistory` (TIME_SERIES_DAILY, after the 1.1 s wait) → output data (quote values + dates/closes) → presenter formats `$247.13`, `+2.46 (+1.01%)`, "As of ..." → view model → view.
+
+**Failure:** the DAO throws `StockDataUnavailableException` → `prepareFailView(message)`.
+
+**Four ideas:**
+1. The interactor only knows interfaces (DIP / Dependency Rule).
+2. `execute()` returns void; results flow out through the presenter.
+3. The presenter does all the formatting (SRP).
+4. Picking a match = the same use case run again with that ticker, not a new use case.

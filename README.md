@@ -44,8 +44,8 @@ View past strategies and view strategy performance.
 ## Minimal Viable Product (MVP)
 | Team Member | MVP Use Case |
 |-------------|--------------|
-| Name | Use Case |
-| Name | Use Case |
+| Arush Gupta | Use Case 1|
+| Matteo Grassia| Use Case 2|
 | Name | Use Case |
 ---
 ## Entities

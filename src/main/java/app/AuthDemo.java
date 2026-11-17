@@ -1,44 +1,32 @@
 package app;
 
 import data_access.SqliteUserDataAccessObject;
+import interface_adapter.ViewManagerModel;
+import interface_adapter.logged_in.LoggedInState;
+import interface_adapter.logged_in.LoggedInViewModel;
 import interface_adapter.login.LoginController;
+import interface_adapter.login.LoginPresenter;
+import interface_adapter.login.LoginState;
+import interface_adapter.login.LoginViewModel;
 import interface_adapter.signup.SignupController;
+import interface_adapter.signup.SignupPresenter;
+import interface_adapter.signup.SignupState;
+import interface_adapter.signup.SignupViewModel;
 import java.util.Scanner;
 import use_case.UserStorageException;
 import use_case.login.LoginInteractor;
-import use_case.login.LoginOutputBoundary;
-import use_case.login.LoginOutputData;
 import use_case.signup.SignupInteractor;
-import use_case.signup.SignupOutputBoundary;
-import use_case.signup.SignupOutputData;
 
 /**
  * Console stand-in for the signup and login views, backed by the real SQLite database.
  *
- * <p>Delete once the Swing views are wired in {@link AppBuilder}.
+ * <p>Wires the same controllers, interactors, presenters and view models the Swing app will use;
+ * console listeners on the view models take the place of the views. Delete once the Swing views
+ * are wired in {@link AppBuilder}.
  */
 public class AuthDemo {
 
   private static final String DEFAULT_DB_PATH = "amnr.db";
-
-  /** Prints each result to the console in place of a presenter and view. */
-  private static class ConsolePresenter implements SignupOutputBoundary, LoginOutputBoundary {
-
-    @Override
-    public void prepareSuccessView(SignupOutputData outputData) {
-      System.out.println("Signed up: " + outputData.getUsername());
-    }
-
-    @Override
-    public void prepareSuccessView(LoginOutputData outputData) {
-      System.out.println("Welcome, " + outputData.getUsername() + "!");
-    }
-
-    @Override
-    public void prepareFailView(String errorMessage) {
-      System.out.println("Error: " + errorMessage);
-    }
-  }
 
   /**
    * Starts the console demo.
@@ -49,9 +37,21 @@ public class AuthDemo {
   public static void main(String[] args) throws UserStorageException {
     final String dbPath = args.length > 0 ? args[0] : DEFAULT_DB_PATH;
     final SqliteUserDataAccessObject dao = new SqliteUserDataAccessObject(dbPath);
-    final ConsolePresenter presenter = new ConsolePresenter();
-    final SignupController signup = new SignupController(new SignupInteractor(dao, presenter));
-    final LoginController login = new LoginController(new LoginInteractor(dao, presenter));
+
+    final ViewManagerModel viewManagerModel = new ViewManagerModel();
+    final SignupViewModel signupViewModel = new SignupViewModel();
+    final LoginViewModel loginViewModel = new LoginViewModel();
+    final LoggedInViewModel loggedInViewModel = new LoggedInViewModel();
+    addConsoleListeners(viewManagerModel, signupViewModel, loginViewModel, loggedInViewModel);
+
+    final SignupController signup =
+        new SignupController(
+            new SignupInteractor(
+                dao, new SignupPresenter(viewManagerModel, signupViewModel, loginViewModel)));
+    final LoginController login =
+        new LoginController(
+            new LoginInteractor(
+                dao, new LoginPresenter(viewManagerModel, loginViewModel, loggedInViewModel)));
 
     System.out.println("Using database: " + dbPath);
     final Scanner in = new Scanner(System.in);
@@ -68,6 +68,30 @@ public class AuthDemo {
       } else if ("q".equalsIgnoreCase(choice)) {
         return;
       }
+    }
+  }
+
+  /** Prints what each view would display when its view model fires. */
+  private static void addConsoleListeners(
+      ViewManagerModel viewManagerModel,
+      SignupViewModel signupViewModel,
+      LoginViewModel loginViewModel,
+      LoggedInViewModel loggedInViewModel) {
+    viewManagerModel.addPropertyChangeListener(
+        event -> System.out.println("[view] now showing: " + event.getNewValue()));
+    signupViewModel.addPropertyChangeListener(
+        event -> printError("sign up", ((SignupState) event.getNewValue()).getError()));
+    loginViewModel.addPropertyChangeListener(
+        event -> printError("log in", ((LoginState) event.getNewValue()).getError()));
+    loggedInViewModel.addPropertyChangeListener(
+        event ->
+            System.out.println(
+                "[logged in] Welcome, " + ((LoggedInState) event.getNewValue()).getUsername()));
+  }
+
+  private static void printError(String viewName, String error) {
+    if (error != null) {
+      System.out.println("[" + viewName + "] Error: " + error);
     }
   }
 

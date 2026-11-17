@@ -1,0 +1,12 @@
+symbol,name,exchange,assetType,ipoDate,delistingDate,status
+AAPL,Apple Inc,NASDAQ,Stock,1980-12-12,null,Active
+AAPX,T-REX 2X LONG APPLE DAILY TARGET ETF ,BATS,ETF,2024-01-11,null,Active
+AAPY,Kurv Yield Premium Strategy Apple (AAPL) ETF,BATS,ETF,2023-10-27,null,Active
+ACFN,,NASDAQ,Stock,2025-07-24,null,Active
+APLE,Apple Hospitality REIT Inc,NYSE,Stock,2015-05-18,null,Active
+GOOG,Alphabet Inc - Class C,NASDAQ,Stock,2014-03-27,null,Active
+GOOGL,Alphabet Inc - Class A,NASDAQ,Stock,2004-08-19,null,Active
+IBM,International Business Machines Corp,NYSE,Stock,1962-01-02,null,Active
+MLP,Maui Land & Pineapple Co. Inc,NYSE,Stock,1996-01-02,null,Active
+MSFT,Microsoft Corporation,NASDAQ,Stock,1986-03-13,null,Active
+PTIV,Pineapple Financial Inc,NYSE MKT,Stock,2023-11-01,null,Active

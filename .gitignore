@@ -43,3 +43,6 @@ build/
 ### Secrets (API keys go in env vars or a local .env, never in Git) ###
 .env
 *.env
+
+### Downloaded data (the app re-downloads it if missing) ###
+data/

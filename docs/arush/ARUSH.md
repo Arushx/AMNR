@@ -227,3 +227,214 @@ what we added, and what I learned.
 **Added:** filled in the README's **Entities** section (`PricePoint`, `PriceHistory`, `Quote`, with fields and rules) and **API Usage** section (Alpha Vantage, docs link, which endpoints are used for what, whether they've been called successfully, the 25/day limit, and key setup).
 
 **Learned:** the course README must say whether each API was **called successfully**. Ours is honest: it works with the demo key; the check with my own key is still pending.
+
+---
+
+## 14. Code walkthrough: PricePoint
+
+**Talked about:** every line of `PricePoint`, and how it works at runtime.
+
+**Learned:**
+- It imports only `java.time.LocalDate`, so the entity depends on nothing outward. `LocalDate` = a date with no time, comparable, and can't be invalid.
+- `private final` fields + no setters = **immutable**. `double` for prices, `long` for volume (can exceed `int`).
+- The constructor checks the business rules first (date not null, prices > 0, low ≤ high, volume ≥ 0) and **throws `IllegalArgumentException`** before storing anything, so an invalid `PricePoint` can never exist.
+- **Runtime path:** JSON text → parser converts it (`LocalDate.parse`, `Double.parseDouble`, `Long.parseLong`) → `new PricePoint(...)` → checks → fields set → object frozen → others only read it via getters.
+- **Bad data path:** constructor throws → parser catches it as `AlphaVantageException` → DAO turns that into `StockDataUnavailableException` → the use case reports "couldn't get data".
+- Tip: debug `PricePointTest.rejectsLowAboveHigh` with a breakpoint on the `low > high` check to watch it happen.
+
+---
+
+## 15. Code walkthrough: PriceHistory (part 1: fields + constructor)
+
+**Talked about:** what `PriceHistory` holds in terms of the API's `TIME_SERIES_DAILY` data, and its constructor.
+
+**Learned:**
+- `symbol` comes from `"Meta Data" → "2. Symbol"`; `points` = one `PricePoint` per date in `"Time Series (Daily)"` (~100 days).
+- It rejects a blank symbol or a `null` list; an **empty** list is allowed (no days in range).
+- The API's days come in **no guaranteed order** (JSON object keys aren't ordered), so the constructor **copies** the list and **sorts** it by date: oldest → newest, like a chart.
+- After sorting, duplicates sit next to each other, so one loop comparing each day with the previous catches them. Use `.equals()` for dates, not `==`.
+- `toUpperCase()` normalises the symbol; `Collections.unmodifiableList` makes the stored list read-only.
+
+---
+
+## 16. Code walkthrough: PriceHistory (part 2: methods)
+
+**Learned:**
+- `points.get(0)` is always the **oldest** day after the constructor sorts (Nov 11 in the example).
+- `between(start, end)`: keeps days that are "not before start and not after end" (both ends included) and returns a **new** history, so the screen can show different ranges from **one** API response (saves our 25/day).
+- `getLatest()`: the last item in the sorted list = the most recent trading day (matches `"3. Last Refreshed"`).
+- `getHighestClose()` / `getLowestClose()`: one pass through the days, keeping the best so far (`>` / `<`, so ties go to the earlier day). They return the whole `PricePoint`, so we also get the **date** of the peak or dip for the news search (story 5).
+- `requireNotEmpty()`: throws `IllegalStateException` instead of a confusing index crash when there are no days (e.g. a weekend range). `IllegalState` = "can't ask this right now" vs. `IllegalArgument` = "you passed something bad".
+
+---
+
+## 17. Code walkthrough: Quote
+
+**Learned:**
+- **Purpose:** a snapshot of "price now + today's move" for one stock (stories 1 and 2: search result, watchlist row). `PriceHistory` is for change over time; `Quote` is for right now.
+- Comes from the `GLOBAL_QUOTE` request. Kept: `"01. symbol"`, `"05. price"`, `"09. change"`, `"10. change percent"` (minus the `%`), `"07. latest trading day"`. Dropped open/high/low/volume/previous close: not needed for this job (SRP; can add later).
+- Rules: symbol not blank, price > 0, day not null. `change`/`changePercent` **may be negative** (stock fell), so they aren't checked.
+- Immutable: a refresh makes a **new** `Quote`.
+- `latestTradingDay` lets the UI say "as of Nov 13" on weekends instead of pretending it's live.
+
+---
+
+## 18. Code walkthrough: QuoteDataAccessInterface
+
+**Learned:**
+- It's the **Data Access Interface** box: `Quote getQuote(String symbol) throws StockDataUnavailableException`.
+- Lives in `use_case` (inner), because the use case **owns** what it needs; the outer `data_access` layer implements it (DIP).
+- Mentions no API details (no `GLOBAL_QUOTE`, URL, key, JSON); only our `Quote` entity and our own exception. So the interactor never knows Alpha Vantage exists.
+- Benefits: swap the API by changing only the implementing class (OCP); test interactors with a fake implementation (no network); one small method (ISP).
+
+---
+
+## 19. Code walkthrough: AlphaVantageClient
+
+**Learned:**
+- The **only** class that talks to the internet: the "Data Access → Database" arrow. It returns raw JSON; it doesn't understand prices.
+- Imports OkHttp (HTTP) and org.json (JSON). They're outer-layer tools, which is why it's in `data_access`.
+- The API key is **passed into the constructor** (`AppBuilder` will read the env var); a missing key fails immediately with a fix-it message.
+- `fetchGlobalQuote` / `fetchDailyTimeSeries` are one-liners that call the private `query(function, param, value)`.
+- `query` builds `https://www.alphavantage.co/query?function=...&symbol=...&apikey=...` with `HttpUrl.Builder` (safe encoding), sends it with `.execute()` (it **waits**, so never on the EDT), and closes the connection with try-with-resources.
+- Checks, in order: HTTP status → body exists → parse JSON → `checkForApiError` → return.
+- `IOException` / `JSONException` are rethrown as **`AlphaVantageException`** (message + original cause), so callers handle one error type.
+- `checkForApiError`: Alpha Vantage sends errors with **HTTP 200**, so look for `"Error Message"`, `"Information"` or `"Note"` in the JSON. It's package-private and static, so tests can call it without the network.
+- SRP: it changes only if *how we talk to the API* changes.
+
+---
+
+## 20. Code walkthrough: AlphaVantageParser
+
+**Learned:**
+- A **translator**: raw Alpha Vantage JSON in → our entities out (the "Data Access → Entities" arrow). No network, so it's tested with saved files.
+- Every key name (`"05. price"`, `"4. close"`, ...) is a constant in one place: readable, and only one spot to fix if the API changes.
+- `parseQuote`: `optJSONObject("Global Quote")`; an **empty** `"Global Quote": {}` means an unknown symbol (HTTP 200, no error key, so the parser must catch it). Strip `%`, then `Double.parseDouble` / `LocalDate.parse` → `new Quote(...)`.
+- `parseDailyHistory`: symbol from `"Meta Data" → "2. Symbol"`; loop over `"Time Series (Daily)".keySet()`. Each **key is the date**, and its box holds the prices → one `PricePoint` per day → `new PriceHistory(...)`, which does the sorting (no need to sort here).
+- One multi-catch (`JSONException | IllegalArgumentException | DateTimeParseException`) turns a missing key, bad number (`NumberFormatException` is an `IllegalArgumentException`), entity rule violation or bad date into `AlphaVantageException`. One bad day rejects the whole history.
+- SRP: client = *how we talk*; parser = *shape of the JSON*.
+
+---
+
+## 21. Code walkthrough: AlphaVantageStockDataAccessObject
+
+**Learned:**
+- It's the **"Data Access" box**: it `implements QuoteDataAccessInterface, PriceHistoryDataAccessInterface` (one class can implement several small interfaces, thanks to ISP).
+- It imports `use_case` and `entity`, so outer points inward: "implementing from below".
+- The client and parser come in through the **constructor** (dependency injection): `AppBuilder` passes the real ones, and the test passes a fake client, so no network.
+- Each method is one line, read inside out: `parser.parseQuote(client.fetchGlobalQuote(symbol))`. `@Override` makes the compiler check it matches the interface.
+- **Error translation:** catches `AlphaVantageException` (a `data_access` type) and rethrows `StockDataUnavailableException` (a `use_case` type). Otherwise the interactor would have to import `data_access`, breaking the Dependency Rule.
+- The full path: DAO → client (URL, send, check) → parser (text → numbers → entity) → entity rules → back to the use case.
+- To switch APIs: write a new class implementing the same interfaces and change one line in `AppBuilder` (OCP/DIP).
+
+---
+
+## 22. Use Case 1 (my use case), step 1: ticker search engine, no view yet
+
+**Talked about:** I lead Use Case 1 ("search stocks by name and ticker and view historical data"). "Ticker" = the short trading code (`AAPL`). Alpha Vantage's price requests **only accept tickers**, so a company name has to be turned into a ticker first. We chose a **local listing file** (download every ticker + name once, save it, search offline) over calling `SYMBOL_SEARCH` each time. Plan: step 1 = ticker search; step 2 = name search with the local file.
+
+**Added** (branch `use-case-1-search-up-stock-historical-data`), one file per CA engine box:
+
+| Slide box | File |
+|---|---|
+| Input Data | `use_case/search_stock/SearchStockInputData` (the text typed) |
+| Input Boundary | `SearchStockInputBoundary` (`execute(inputData)`) |
+| Interactor | `SearchStockInteractor` |
+| Output Boundary | `SearchStockOutputBoundary` (`prepareSuccessView` / `prepareFailView`) |
+| Output Data | `SearchStockOutputData` (quote values + `dates`/`closes` lists, oldest first) |
+| Data Access Interface | the existing `QuoteDataAccessInterface` + `PriceHistoryDataAccessInterface` |
+| Data Access | the existing `AlphaVantageStockDataAccessObject` |
+| Controller | `interface_adapter/search_stock/SearchStockController` |
+| Presenter | `SearchStockPresenter` (formats `$247.13`, `+2.46 (+1.01%)`, `As of Nov 13, 2026`) |
+| View Model | `SearchStockViewModel` + `SearchStockState` + `SearchStockViewModelListener` |
+| View | **not yet** (Swing, later) |
+
+Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → presenter → interactor → controller. It isn't called from `Main` yet (the view PR will chain it).
+
+**Interactor rules:** trim + uppercase (`" ibm "` → `IBM`); blank → "Please enter a ticker symbol."; anything other than letters/digits/`.`/`-` (1–10 chars) → "isn't a valid ticker". Both are rejected **before** calling the API, so they don't waste requests. Then get the quote + history; a `StockDataUnavailableException` → fail view with its message.
+
+**Tests:** `SearchStockInteractorTest` (7, using a fake data source + recording presenter) and `SearchStockPresenterTest` (4). 42 tests total, CheckStyle clean, no use_case/interface_adapter file imports an outer layer.
+
+**Learned:**
+- Output Data holds **plain values**, not entities, and the presenter does all the **formatting**. The state holds display-ready strings + chart lists.
+- The controller must be called **off the EDT** (it calls the API).
+- One DAO object is passed twice into the interactor (`stockDataAccess, stockDataAccess`), because it implements both small interfaces.
+
+---
+
+## 23. Trying Use Case 1 without a view: console demo
+
+**Added:** `src/test/java/app/SearchStockConsoleDemo.java`, a dev-only program (in `src/test`, so it never ships). It builds the real engine like `AppBuilder` does, and **stands in for the view**: it reads a ticker from the keyboard, calls the controller, and prints the view model's state when the presenter notifies it.
+- With `ALPHA_VANTAGE_API_KEY` set → real data (2 requests per search).
+- Without it → **offline**, using the saved IBM responses (every ticker returns IBM).
+
+**How to run:** in IntelliJ, open the file and click ▶ next to `main`; type tickers in the Run console. For live data, add the key under *Run → Edit Configurations → Environment variables*.
+
+**Learned:** the view's only job is "call the controller, then redraw when the view model notifies". The demo does exactly that with `System.out` instead of Swing, which proves the engine works end to end before any UI exists.
+
+---
+
+## 24. How ticker matching works, "live" data, and testing with my key
+
+**Learned:**
+- **No matching on our side:** the tidied ticker is sent as `symbol=AAPL`; Alpha Vantage does an **exact** lookup. A typo (`APPL`) → empty `"Global Quote": {}` → "No quote found". Turning names into tickers is step 2 (local listing).
+- **Not live:** the free quote is **end-of-day** (the last close); real-time/15-min delayed and intraday charts are **premium**. Our history = one point per day, ~100 days. That's why we show "As of <date>". In the presentation, say "end-of-day data", not "live".
+- **Testing with my key:**
+  1. Browser: `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=KEY` shows the raw JSON (1 request).
+  2. Console demo: *Run → Edit Configurations → SearchStockConsoleDemo → Environment variables* → `ALPHA_VANTAGE_API_KEY`; the first line says ONLINE (2 requests per search).
+  3. Compare with Google: our price = the close on our "As of" date (Google's previous close during trading hours).
+  4. Run `AlphaVantageClientTest.fetchesRealQuote` with the key, then update the README's "pending" line.
+
+---
+
+## 25. Use Case 1, step 2: company-name search with top 5 matches
+
+**Talked about:** typing "Apple" should find AAPL. Alpha Vantage only understands tickers, so we look names up **locally**. If what's typed isn't a known ticker, show the **top 5 name matches** and let the user pick.
+
+**Downloaded:** Alpha Vantage's `LISTING_STATUS` (14,528 US stocks and ETFs; CSV: `symbol,name,exchange,assetType,...`) into `data/listing_status.csv` (git-ignored; the app re-downloads it if missing).
+
+**Added:**
+- Entities: `StockListing` (symbol, name, exchange) and `StockDirectory` (`findBySymbol`, `searchByName(query, limit)`). Ranking: exact name → name starts with → a word starts with → contains; ties go to the shorter name, then the ticker.
+- `use_case/StockListingDataAccessInterface` (`getListings()`).
+- `data_access/FileStockListingDataAccessObject`: reads the saved file; if it's missing, downloads it with the client, saves it, then reads it. Keeps it in memory after that. **This is our data persistence for search.**
+- Client: `fetchListingStatus()` (CSV, not JSON; errors still come as JSON). Parser: `parseListings(csv)`.
+- Use case: `SearchStockMatchesOutputData` + `prepareMatchesView` on the output boundary. The input is now a `query` (ticker or name).
+- Presenter/state: `matchLabels` ("AAPL  Apple Inc  (NASDAQ)") + `matchSymbols`. Picking match *i* = `controller.execute(matchSymbols.get(i))`, so **no extra use case** is needed.
+- Console demo: type a name, then a number to pick.
+
+**Interactor flow:** blank → error. Load the list. Known ticker → quote + history. Otherwise, name matches → show the top 5. No matches but it looks like a ticker → try it anyway (e.g. `SHOP.TO`). Otherwise "No stocks match". If the list can't load, a ticker still works; a name search fails.
+
+**Tests:** 64 total (1 live test skipped), all passing; CheckStyle clean; no inner layer imports an outer one.
+
+**Learned:** a name search costs **0 API requests** (the local file); only showing a stock costs 2. A `@TempDir` gives tests a throwaway folder, so file-saving can be tested safely.
+
+---
+
+## 26. First live run: the 1-request-per-second limit
+
+**What happened:** with my key, searching `AAPL` gave "Could not get price history for AAPL: ...spreading out your free API requests more sparingly (**1 request per second**)...". The quote request worked; the history request was sent milliseconds later and was rejected.
+
+**Fixed:** `AlphaVantageClient.waitForRateLimit()` remembers when the last request was sent and sleeps until at least **1.1 s** has passed before sending the next. It's `synchronized` so two threads can't send at once. Searching a stock now takes about 1 extra second.
+
+**Learned:**
+- The free key has **two** limits: **25/day** and **1/second**. Both come back as HTTP 200 + `"Information"`, and our error handling showed the message correctly.
+- Rate limiting is an **API detail**, so it belongs in the client (`data_access`), not the interactor.
+- My key works (the quote request succeeded), so the README's "pending" line can be updated.
+
+**Update:** after the fix, the live search works with my key. README updated: the API is confirmed working with our own key, and it now lists both limits (25/day, 1/second). Idea for later if the daily limit becomes a problem: take the quote from the daily history, so each search uses 1 request instead of 2.
+
+---
+
+## 27. Overview: everything in Use Case 1
+
+**Scenario A, "apple"** (0 API requests): controller → interactor → listing DAO (saved CSV, or download once) → parser → `StockDirectory` → not a ticker → `searchByName` top 5 → `prepareMatchesView` → presenter makes labels → view model notifies the view.
+
+**Scenario B, pick "1" / "AAPL"** (2 requests): controller → interactor → known ticker → DAO `getQuote` (GLOBAL_QUOTE) + `getDailyHistory` (TIME_SERIES_DAILY, after the 1.1 s wait) → output data (quote values + dates/closes) → presenter formats `$247.13`, `+2.46 (+1.01%)`, "As of ..." → view model → view.
+
+**Failure:** the DAO throws `StockDataUnavailableException` → `prepareFailView(message)`.
+
+**Four ideas:**
+1. The interactor only knows interfaces (DIP / Dependency Rule).
+2. `execute()` returns void; results flow out through the presenter.
+3. The presenter does all the formatting (SRP).
+4. Picking a match = the same use case run again with that ticker, not a new use case.

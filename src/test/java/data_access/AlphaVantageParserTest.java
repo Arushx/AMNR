@@ -6,10 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import entity.PriceHistory;
 import entity.PricePoint;
 import entity.Quote;
+import entity.StockListing;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.List;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 
@@ -77,5 +79,27 @@ class AlphaVantageParserTest {
             + " \"10. change percent\": \"1%\"}}");
 
     assertThrows(AlphaVantageException.class, () -> parser.parseQuote(json));
+  }
+
+  @Test
+  void parsesListingCsvSkippingRowsWithoutData() throws Exception {
+    String csv;
+    try (InputStream in =
+        AlphaVantageParserTest.class.getResourceAsStream("/alphavantage/listing_status_sample.csv")) {
+      csv = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+    }
+
+    List<StockListing> listings = parser.parseListings(csv);
+
+    assertEquals(11, listings.size());
+    StockListing apple = listings.get(0);
+    assertEquals("AAPL", apple.getSymbol());
+    assertEquals("Apple Inc", apple.getName());
+    assertEquals("NASDAQ", apple.getExchange());
+  }
+
+  @Test
+  void listingWithoutHeaderIsRejected() {
+    assertThrows(AlphaVantageException.class, () -> parser.parseListings("not,a,listing"));
   }
 }

@@ -10,3 +10,8 @@ One sub-package per use case, e.g. `use_case/search_stock/`, containing:
 - `XDataAccessInterface` (interface, implemented in `data_access`)
 
 May import from `entity` only.
+
+Shared data access interfaces that several use cases need (e.g.
+`QuoteDataAccessInterface`, `PriceHistoryDataAccessInterface`) and
+`StockDataUnavailableException` live at the top level of `use_case`. Keep each
+interface small: one kind of data per interface.

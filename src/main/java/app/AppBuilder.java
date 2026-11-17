@@ -17,7 +17,7 @@ import javax.swing.WindowConstants;
  */
 public class AppBuilder {
 
-  private static final String TITLE = "JoomBerg";
+  private static final String TITLE = "AMNR"; // TODO Decide if this is our final
 
   private final CardLayout cardLayout = new CardLayout();
   private final JPanel cardPanel = new JPanel(cardLayout);

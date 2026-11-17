@@ -407,3 +407,18 @@ Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → prese
 **Tests:** 64 total (1 live test skipped), all passing; CheckStyle clean; no inner layer imports an outer one.
 
 **Learned:** a name search costs **0 API requests** (the local file); only showing a stock costs 2. A `@TempDir` gives tests a throwaway folder, so file-saving can be tested safely.
+
+---
+
+## 26. First live run: the 1-request-per-second limit
+
+**What happened:** with my key, searching `AAPL` gave "Could not get price history for AAPL: ...spreading out your free API requests more sparingly (**1 request per second**)...". The quote request worked; the history request was sent milliseconds later and was rejected.
+
+**Fixed:** `AlphaVantageClient.waitForRateLimit()` remembers when the last request was sent and sleeps until at least **1.1 s** has passed before sending the next. It's `synchronized` so two threads can't send at once. Searching a stock now takes about 1 extra second.
+
+**Learned:**
+- The free key has **two** limits: **25/day** and **1/second**. Both come back as HTTP 200 + `"Information"`, and our error handling showed the message correctly.
+- Rate limiting is an **API detail**, so it belongs in the client (`data_access`), not the interactor.
+- My key works (the quote request succeeded), so the README's "pending" line can be updated.
+
+**Update:** after the fix, the live search works with my key. README updated: the API is confirmed working with our own key, and it now lists both limits (25/day, 1/second). Idea for later if the daily limit becomes a problem: take the quote from the daily history, so each search uses 1 request instead of 2.

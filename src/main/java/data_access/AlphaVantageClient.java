@@ -19,8 +19,15 @@ public class AlphaVantageClient {
 
   private static final String BASE_URL = "https://www.alphavantage.co/query";
 
+  /**
+   * The free key allows at most 1 request per second, so requests are spaced at least this far
+   * apart (with a little margin).
+   */
+  private static final long MIN_GAP_MILLIS = 1100;
+
   private final String apiKey;
   private final OkHttpClient httpClient = new OkHttpClient();
+  private long lastRequestMillis;
 
   /**
    * Creates a client that authenticates with the given key.
@@ -109,6 +116,7 @@ public class AlphaVantageClient {
    * @throws AlphaVantageException if the network fails, the status isn't 2xx, or there's no body
    */
   private String send(HttpUrl url) throws AlphaVantageException {
+    waitForRateLimit();
     final Request request = new Request.Builder().url(url).build();
     try (Response response = httpClient.newCall(request).execute()) {
       if (!response.isSuccessful()) {
@@ -123,6 +131,25 @@ public class AlphaVantageClient {
     } catch (IOException e) {
       throw new AlphaVantageException("Could not reach Alpha Vantage: " + e.getMessage(), e);
     }
+  }
+
+  /**
+   * Waits, if needed, so that this request starts at least {@link #MIN_GAP_MILLIS} after the
+   * previous one. {@code synchronized} so two threads can't send at the same moment.
+   *
+   * @throws AlphaVantageException if the thread is interrupted while waiting
+   */
+  private synchronized void waitForRateLimit() throws AlphaVantageException {
+    final long waitMillis = lastRequestMillis + MIN_GAP_MILLIS - System.currentTimeMillis();
+    if (waitMillis > 0) {
+      try {
+        Thread.sleep(waitMillis);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new AlphaVantageException("Interrupted while waiting to contact Alpha Vantage", e);
+      }
+    }
+    lastRequestMillis = System.currentTimeMillis();
   }
 
   /**

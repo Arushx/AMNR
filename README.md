@@ -77,9 +77,9 @@ The latest price of a stock and how much it moved since the previous close.
 - `LISTING_STATUS`: the list of every US stock and ETF (ticker, company name, exchange), downloaded once and saved to `data/listing_status.csv` so company-name searches ("apple" → AAPL) cost no API requests. Successfully called.
 - Planned: `NEWS_SENTIMENT` for news around price peaks and dips (to be confirmed, as it may require a paid key).
 
-**Called successfully?** Yes for `GLOBAL_QUOTE` and `TIME_SERIES_DAILY` (with Alpha Vantage's demo key; real responses are saved in `src/test/resources/alphavantage/` and used by our tests). A check with our own key is pending.
+**Called successfully?** Yes: `GLOBAL_QUOTE`, `TIME_SERIES_DAILY` and `LISTING_STATUS` all work with our own key (real responses are saved in `src/test/resources/alphavantage/` and used by our tests).
 
-**Limits:** the free key allows 25 requests per day, so tests use saved responses instead of the live API.
+**Limits:** the free key allows 25 requests per day and 1 request per second. The client spaces requests at least 1.1 seconds apart, and tests use saved responses instead of the live API.
 
 **Setup:** set your key in the environment variable `ALPHA_VANTAGE_API_KEY` (for example in IntelliJ: *Run* → *Edit Configurations* → *Environment variables*). Never commit a key.
 ---

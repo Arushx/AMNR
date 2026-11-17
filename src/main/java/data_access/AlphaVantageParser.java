@@ -3,6 +3,7 @@ package data_access;
 import entity.PriceHistory;
 import entity.PricePoint;
 import entity.Quote;
+import entity.StockListing;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -33,6 +34,8 @@ public class AlphaVantageParser {
   private static final String LOW = "3. low";
   private static final String CLOSE = "4. close";
   private static final String VOLUME = "5. volume";
+
+  private static final String LISTING_HEADER = "symbol,name,exchange";
 
   /**
    * Parses a GLOBAL_QUOTE response.
@@ -89,5 +92,30 @@ public class AlphaVantageParser {
     } catch (JSONException | IllegalArgumentException | DateTimeParseException e) {
       throw new AlphaVantageException("Unexpected time series format from Alpha Vantage", e);
     }
+  }
+
+  /**
+   * Parses the LISTING_STATUS CSV into listings.
+   *
+   * <p>Each line after the header is {@code symbol,name,exchange,assetType,...}. Lines without a
+   * symbol, or with too few columns, are skipped.
+   *
+   * @param csv the text from {@link AlphaVantageClient#fetchListingStatus()}
+   * @return every listing in the file
+   * @throws AlphaVantageException if the text doesn't start with the expected header
+   */
+  public List<StockListing> parseListings(String csv) throws AlphaVantageException {
+    final String[] lines = csv.split("\\R");
+    if (lines.length == 0 || !lines[0].startsWith(LISTING_HEADER)) {
+      throw new AlphaVantageException("Unexpected stock list format from Alpha Vantage");
+    }
+    final List<StockListing> listings = new ArrayList<>();
+    for (int i = 1; i < lines.length; i++) {
+      final String[] columns = lines[i].split(",", -1);
+      if (columns.length >= 3 && !columns[0].isBlank()) {
+        listings.add(new StockListing(columns[0], columns[1], columns[2]));
+      }
+    }
+    return listings;
   }
 }

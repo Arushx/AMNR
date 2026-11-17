@@ -359,3 +359,51 @@ Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → prese
 - Output Data holds **plain values**, not entities, and the presenter does all the **formatting**. The state holds display-ready strings + chart lists.
 - The controller must be called **off the EDT** (it calls the API).
 - One DAO object is passed twice into the interactor (`stockDataAccess, stockDataAccess`), because it implements both small interfaces.
+
+---
+
+## 23. Trying Use Case 1 without a view: console demo
+
+**Added:** `src/test/java/app/SearchStockConsoleDemo.java`, a dev-only program (in `src/test`, so it never ships). It builds the real engine like `AppBuilder` does, and **stands in for the view**: it reads a ticker from the keyboard, calls the controller, and prints the view model's state when the presenter notifies it.
+- With `ALPHA_VANTAGE_API_KEY` set → real data (2 requests per search).
+- Without it → **offline**, using the saved IBM responses (every ticker returns IBM).
+
+**How to run:** in IntelliJ, open the file and click ▶ next to `main`; type tickers in the Run console. For live data, add the key under *Run → Edit Configurations → Environment variables*.
+
+**Learned:** the view's only job is "call the controller, then redraw when the view model notifies". The demo does exactly that with `System.out` instead of Swing, which proves the engine works end to end before any UI exists.
+
+---
+
+## 24. How ticker matching works, "live" data, and testing with my key
+
+**Learned:**
+- **No matching on our side:** the tidied ticker is sent as `symbol=AAPL`; Alpha Vantage does an **exact** lookup. A typo (`APPL`) → empty `"Global Quote": {}` → "No quote found". Turning names into tickers is step 2 (local listing).
+- **Not live:** the free quote is **end-of-day** (the last close); real-time/15-min delayed and intraday charts are **premium**. Our history = one point per day, ~100 days. That's why we show "As of <date>". In the presentation, say "end-of-day data", not "live".
+- **Testing with my key:**
+  1. Browser: `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=KEY` shows the raw JSON (1 request).
+  2. Console demo: *Run → Edit Configurations → SearchStockConsoleDemo → Environment variables* → `ALPHA_VANTAGE_API_KEY`; the first line says ONLINE (2 requests per search).
+  3. Compare with Google: our price = the close on our "As of" date (Google's previous close during trading hours).
+  4. Run `AlphaVantageClientTest.fetchesRealQuote` with the key, then update the README's "pending" line.
+
+---
+
+## 25. Use Case 1, step 2: company-name search with top 5 matches
+
+**Talked about:** typing "Apple" should find AAPL. Alpha Vantage only understands tickers, so we look names up **locally**. If what's typed isn't a known ticker, show the **top 5 name matches** and let the user pick.
+
+**Downloaded:** Alpha Vantage's `LISTING_STATUS` (14,528 US stocks and ETFs; CSV: `symbol,name,exchange,assetType,...`) into `data/listing_status.csv` (git-ignored; the app re-downloads it if missing).
+
+**Added:**
+- Entities: `StockListing` (symbol, name, exchange) and `StockDirectory` (`findBySymbol`, `searchByName(query, limit)`). Ranking: exact name → name starts with → a word starts with → contains; ties go to the shorter name, then the ticker.
+- `use_case/StockListingDataAccessInterface` (`getListings()`).
+- `data_access/FileStockListingDataAccessObject`: reads the saved file; if it's missing, downloads it with the client, saves it, then reads it. Keeps it in memory after that. **This is our data persistence for search.**
+- Client: `fetchListingStatus()` (CSV, not JSON; errors still come as JSON). Parser: `parseListings(csv)`.
+- Use case: `SearchStockMatchesOutputData` + `prepareMatchesView` on the output boundary. The input is now a `query` (ticker or name).
+- Presenter/state: `matchLabels` ("AAPL  Apple Inc  (NASDAQ)") + `matchSymbols`. Picking match *i* = `controller.execute(matchSymbols.get(i))`, so **no extra use case** is needed.
+- Console demo: type a name, then a number to pick.
+
+**Interactor flow:** blank → error. Load the list. Known ticker → quote + history. Otherwise, name matches → show the top 5. No matches but it looks like a ticker → try it anyway (e.g. `SHOP.TO`). Otherwise "No stocks match". If the list can't load, a ticker still works; a name search fails.
+
+**Tests:** 64 total (1 live test skipped), all passing; CheckStyle clean; no inner layer imports an outer one.
+
+**Learned:** a name search costs **0 API requests** (the local file); only showing a stock costs 2. A `@TempDir` gives tests a throwaway folder, so file-saving can be tested safely.

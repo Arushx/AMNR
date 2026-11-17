@@ -3,10 +3,12 @@ package app;
 import data_access.AlphaVantageClient;
 import data_access.AlphaVantageParser;
 import data_access.AlphaVantageStockDataAccessObject;
+import data_access.FileStockListingDataAccessObject;
 import interface_adapter.search_stock.SearchStockController;
 import interface_adapter.search_stock.SearchStockPresenter;
 import interface_adapter.search_stock.SearchStockViewModel;
 import java.awt.CardLayout;
+import java.nio.file.Path;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -26,6 +28,7 @@ import use_case.search_stock.SearchStockInteractor;
 public class AppBuilder {
 
   private static final String TITLE = "AMNR"; // TODO Decide if this is our final
+  private static final Path LISTING_FILE = Path.of("data", "listing_status.csv");
 
   private final CardLayout cardLayout = new CardLayout();
   private final JPanel cardPanel = new JPanel(cardLayout);
@@ -36,7 +39,8 @@ public class AppBuilder {
   /**
    * Builds the Search Stock engine: data access, presenter, interactor and controller.
    *
-   * <p>Reads the Alpha Vantage key from the {@code ALPHA_VANTAGE_API_KEY} environment variable.
+   * <p>Reads the Alpha Vantage key from the {@code ALPHA_VANTAGE_API_KEY} environment variable. The
+   * list of every stock is kept in {@code data/listing_status.csv}, downloaded on first use.
    * The search view (added separately) uses {@link #searchStockViewModel} to display results and
    * {@link #searchStockController} to start a search.
    *
@@ -46,12 +50,15 @@ public class AppBuilder {
   public AppBuilder addSearchStockUseCase() {
     final AlphaVantageClient client =
         new AlphaVantageClient(System.getenv("ALPHA_VANTAGE_API_KEY"));
+    final AlphaVantageParser parser = new AlphaVantageParser();
     final AlphaVantageStockDataAccessObject stockDataAccess =
-        new AlphaVantageStockDataAccessObject(client, new AlphaVantageParser());
+        new AlphaVantageStockDataAccessObject(client, parser);
+    final FileStockListingDataAccessObject listingDataAccess =
+        new FileStockListingDataAccessObject(LISTING_FILE, client, parser);
 
     final SearchStockPresenter presenter = new SearchStockPresenter(searchStockViewModel);
     final SearchStockInputBoundary interactor =
-        new SearchStockInteractor(stockDataAccess, stockDataAccess, presenter);
+        new SearchStockInteractor(listingDataAccess, stockDataAccess, stockDataAccess, presenter);
     searchStockController = new SearchStockController(interactor);
     return this;
   }

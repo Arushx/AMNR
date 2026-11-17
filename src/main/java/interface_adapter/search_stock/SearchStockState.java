@@ -7,8 +7,13 @@ import java.util.List;
 /**
  * Everything the search view needs to display, already formatted.
  *
- * <p>After a search, either the quote fields and chart data are filled and {@code error} is null,
- * or {@code error} holds a message to show.
+ * <p>After a search, exactly one of these is shown:
+ *
+ * <ul>
+ *   <li>a stock: the quote fields and chart data are filled;
+ *   <li>name matches to pick from: {@code matchLabels} and {@code matchSymbols} are filled;
+ *   <li>an error: {@code error} holds a message.
+ * </ul>
  */
 public class SearchStockState {
 
@@ -19,6 +24,8 @@ public class SearchStockState {
   private boolean up = true;
   private List<LocalDate> chartDates = new ArrayList<>();
   private List<Double> chartCloses = new ArrayList<>();
+  private List<String> matchLabels = new ArrayList<>();
+  private List<String> matchSymbols = new ArrayList<>();
   private String error;
 
   public String getSymbol() {
@@ -81,6 +88,33 @@ public class SearchStockState {
 
   public void setChartCloses(List<Double> chartCloses) {
     this.chartCloses = chartCloses;
+  }
+
+  /**
+   * Returns the name matches to show the user, e.g. "AAPL  Apple Inc  (NASDAQ)", best first.
+   *
+   * @return the labels; empty unless the last search was a name search
+   */
+  public List<String> getMatchLabels() {
+    return matchLabels;
+  }
+
+  public void setMatchLabels(List<String> matchLabels) {
+    this.matchLabels = matchLabels;
+  }
+
+  /**
+   * Returns the ticker behind each match label, in the same order. When the user picks label
+   * {@code i}, the view searches for {@code getMatchSymbols().get(i)}.
+   *
+   * @return the tickers
+   */
+  public List<String> getMatchSymbols() {
+    return matchSymbols;
+  }
+
+  public void setMatchSymbols(List<String> matchSymbols) {
+    this.matchSymbols = matchSymbols;
   }
 
   public String getError() {

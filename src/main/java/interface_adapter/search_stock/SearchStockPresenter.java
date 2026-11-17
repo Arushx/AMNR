@@ -2,7 +2,9 @@ package interface_adapter.search_stock;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import use_case.search_stock.SearchStockMatchesOutputData;
 import use_case.search_stock.SearchStockOutputBoundary;
 import use_case.search_stock.SearchStockOutputData;
 
@@ -38,6 +40,25 @@ public class SearchStockPresenter implements SearchStockOutputBoundary {
     state.setUp(outputData.getChange() >= 0);
     state.setChartDates(new ArrayList<>(outputData.getDates()));
     state.setChartCloses(new ArrayList<>(outputData.getCloses()));
+    state.setError(null);
+
+    viewModel.setState(state);
+    viewModel.notifyStateChanged();
+  }
+
+  @Override
+  public void prepareMatchesView(SearchStockMatchesOutputData outputData) {
+    final List<String> labels = new ArrayList<>();
+    for (int i = 0; i < outputData.getSymbols().size(); i++) {
+      String label = outputData.getSymbols().get(i) + "  " + outputData.getNames().get(i);
+      if (!outputData.getExchanges().get(i).isEmpty()) {
+        label += "  (" + outputData.getExchanges().get(i) + ")";
+      }
+      labels.add(label);
+    }
+    final SearchStockState state = new SearchStockState();
+    state.setMatchLabels(labels);
+    state.setMatchSymbols(new ArrayList<>(outputData.getSymbols()));
     state.setError(null);
 
     viewModel.setState(state);

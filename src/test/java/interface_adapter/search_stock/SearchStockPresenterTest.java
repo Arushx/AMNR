@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import use_case.search_stock.SearchStockMatchesOutputData;
 import use_case.search_stock.SearchStockOutputData;
 
 class SearchStockPresenterTest {
@@ -67,5 +68,33 @@ class SearchStockPresenterTest {
     presenter.prepareSuccessView(output(247.13, 2.46, 1.0054));
 
     assertNull(viewModel.getState().getError());
+  }
+
+  @Test
+  void matchesBecomeLabelsAndSymbols() {
+    presenter.prepareMatchesView(
+        new SearchStockMatchesOutputData(
+            "apple",
+            List.of("AAPL", "XYZ"),
+            List.of("Apple Inc", "Apple Something"),
+            List.of("NASDAQ", "")));
+
+    SearchStockState state = viewModel.getState();
+    assertEquals(
+        List.of("AAPL  Apple Inc  (NASDAQ)", "XYZ  Apple Something"), state.getMatchLabels());
+    assertEquals(List.of("AAPL", "XYZ"), state.getMatchSymbols());
+    assertEquals("", state.getPriceText());
+    assertNull(state.getError());
+    assertEquals(1, notifications);
+  }
+
+  @Test
+  void showingAStockClearsOldMatches() {
+    presenter.prepareMatchesView(
+        new SearchStockMatchesOutputData(
+            "apple", List.of("AAPL"), List.of("Apple Inc"), List.of("NASDAQ")));
+    presenter.prepareSuccessView(output(247.13, 2.46, 1.0054));
+
+    assertTrue(viewModel.getState().getMatchLabels().isEmpty());
   }
 }

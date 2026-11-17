@@ -59,6 +59,25 @@ public class AlphaVantageClient {
   }
 
   /**
+   * Fetches every actively traded US stock and ETF (the LISTING_STATUS function).
+   *
+   * <p>Unlike the other functions, this one answers with CSV text: a header line
+   * {@code symbol,name,exchange,assetType,ipoDate,delistingDate,status}, then one line per stock.
+   *
+   * @return the CSV text
+   * @throws AlphaVantageException if the request fails or Alpha Vantage reports an error
+   */
+  public String fetchListingStatus() throws AlphaVantageException {
+    final String body = send(buildUrl("LISTING_STATUS", null, null));
+    // Errors still come back as JSON, even from this CSV endpoint.
+    if (body.trim().startsWith("{")) {
+      parseAndCheck(body);
+      throw new AlphaVantageException("Alpha Vantage returned JSON instead of the stock list");
+    }
+    return body;
+  }
+
+  /**
    * Sends one request and returns its JSON, after checking for every kind of failure.
    *
    * @param function the Alpha Vantage function name
@@ -69,15 +88,28 @@ public class AlphaVantageClient {
    */
   private JSONObject query(String function, String paramName, String paramValue)
       throws AlphaVantageException {
-    final HttpUrl url =
-        HttpUrl.get(BASE_URL)
-            .newBuilder()
-            .addQueryParameter("function", function)
-            .addQueryParameter(paramName, paramValue)
-            .addQueryParameter("apikey", apiKey)
-            .build();
-    final Request request = new Request.Builder().url(url).build();
+    return parseAndCheck(send(buildUrl(function, paramName, paramValue)));
+  }
 
+  /** Builds the request URL; {@code paramName} may be null for functions with no parameter. */
+  private HttpUrl buildUrl(String function, String paramName, String paramValue) {
+    final HttpUrl.Builder url =
+        HttpUrl.get(BASE_URL).newBuilder().addQueryParameter("function", function);
+    if (paramName != null) {
+      url.addQueryParameter(paramName, paramValue);
+    }
+    return url.addQueryParameter("apikey", apiKey).build();
+  }
+
+  /**
+   * Sends a GET request and returns the response body as text.
+   *
+   * @param url the full request URL
+   * @return the response body
+   * @throws AlphaVantageException if the network fails, the status isn't 2xx, or there's no body
+   */
+  private String send(HttpUrl url) throws AlphaVantageException {
+    final Request request = new Request.Builder().url(url).build();
     try (Response response = httpClient.newCall(request).execute()) {
       if (!response.isSuccessful()) {
         throw new AlphaVantageException(
@@ -87,14 +119,28 @@ public class AlphaVantageClient {
       if (body == null) {
         throw new AlphaVantageException("Alpha Vantage returned an empty response");
       }
-      final JSONObject json = new JSONObject(body.string());
-      checkForApiError(json);
-      return json;
+      return body.string();
     } catch (IOException e) {
       throw new AlphaVantageException("Could not reach Alpha Vantage: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Parses response text as JSON and checks it for Alpha Vantage's error replies.
+   *
+   * @param text the response body
+   * @return the parsed JSON
+   * @throws AlphaVantageException if it isn't JSON or is an error reply
+   */
+  private static JSONObject parseAndCheck(String text) throws AlphaVantageException {
+    final JSONObject json;
+    try {
+      json = new JSONObject(text);
     } catch (JSONException e) {
       throw new AlphaVantageException("Alpha Vantage returned a response that isn't JSON", e);
     }
+    checkForApiError(json);
+    return json;
   }
 
   /**

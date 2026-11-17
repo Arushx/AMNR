@@ -3,11 +3,11 @@ package use_case.search_stock;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import entity.PriceHistory;
 import entity.PricePoint;
 import entity.Quote;
+import entity.StockListing;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,13 +15,34 @@ import org.junit.jupiter.api.Test;
 import use_case.PriceHistoryDataAccessInterface;
 import use_case.QuoteDataAccessInterface;
 import use_case.StockDataUnavailableException;
+import use_case.StockListingDataAccessInterface;
 
-/** Unit tests with a fake data source and a fake presenter: no network, no Swing. */
+/** Unit tests with fake data sources and a fake presenter: no network, no files, no Swing. */
 class SearchStockInteractorTest {
 
   private static final LocalDate DAY = LocalDate.of(2026, 11, 13);
 
-  /** Knows one stock, IBM, and records which symbols were asked for. */
+  /** A small stock list. */
+  private static class FakeListings implements StockListingDataAccessInterface {
+    boolean unavailable;
+
+    @Override
+    public List<StockListing> getListings() throws StockDataUnavailableException {
+      if (unavailable) {
+        throw new StockDataUnavailableException("Could not load the stock list");
+      }
+      return List.of(
+          new StockListing("AAPL", "Apple Inc", "NASDAQ"),
+          new StockListing("APLE", "Apple Hospitality REIT Inc", "NYSE"),
+          new StockListing("PTIV", "Pineapple Financial Inc", "NYSE MKT"),
+          new StockListing("IBM", "International Business Machines Corp", "NYSE"),
+          new StockListing("A1", "Apple Orchard Co", "X"),
+          new StockListing("A2", "Apple Tree Holdings", "X"),
+          new StockListing("A3", "Apple Valley Corp", "X"));
+    }
+  }
+
+  /** Has prices for any symbol except "NOPE", and records which symbols were asked for. */
   private static class FakeStockData
       implements QuoteDataAccessInterface, PriceHistoryDataAccessInterface {
     final List<String> requested = new ArrayList<>();
@@ -31,7 +52,7 @@ class SearchStockInteractorTest {
     public Quote getQuote(String symbol) throws StockDataUnavailableException {
       requested.add(symbol);
       check(symbol);
-      return new Quote("IBM", 247.13, 2.46, 1.0054, DAY);
+      return new Quote(symbol, 247.13, 2.46, 1.0054, DAY);
     }
 
     @Override
@@ -39,7 +60,7 @@ class SearchStockInteractorTest {
       requested.add(symbol);
       check(symbol);
       return new PriceHistory(
-          "IBM",
+          symbol,
           List.of(
               new PricePoint(DAY, 246.63, 247.85, 244.83, 247.13, 100),
               new PricePoint(DAY.minusDays(1), 248.30, 248.77, 244.37, 244.67, 100)));
@@ -49,7 +70,7 @@ class SearchStockInteractorTest {
       if (unavailable) {
         throw new StockDataUnavailableException("daily request limit reached");
       }
-      if (!symbol.equals("IBM")) {
+      if (symbol.equals("NOPE")) {
         throw new StockDataUnavailableException("No quote found for that symbol");
       }
     }
@@ -58,6 +79,7 @@ class SearchStockInteractorTest {
   /** Remembers what the interactor reported. */
   private static class RecordingPresenter implements SearchStockOutputBoundary {
     SearchStockOutputData success;
+    SearchStockMatchesOutputData matches;
     String error;
 
     @Override
@@ -66,23 +88,31 @@ class SearchStockInteractorTest {
     }
 
     @Override
+    public void prepareMatchesView(SearchStockMatchesOutputData outputData) {
+      matches = outputData;
+    }
+
+    @Override
     public void prepareFailView(String errorMessage) {
       error = errorMessage;
     }
   }
 
+  private final FakeListings listings = new FakeListings();
   private final FakeStockData data = new FakeStockData();
   private final RecordingPresenter presenter = new RecordingPresenter();
   private final SearchStockInteractor interactor =
-      new SearchStockInteractor(data, data, presenter);
+      new SearchStockInteractor(listings, data, data, presenter);
+
+  private void search(String query) {
+    interactor.execute(new SearchStockInputData(query));
+  }
 
   @Test
-  void successReturnsQuoteAndHistoryOldestFirst() {
-    interactor.execute(new SearchStockInputData("IBM"));
+  void knownTickerShowsQuoteAndHistoryOldestFirst() {
+    search("IBM");
 
-    if (presenter.error != null) {
-      fail("Unexpected failure: " + presenter.error);
-    }
+    assertNull(presenter.error);
     SearchStockOutputData out = presenter.success;
     assertEquals("IBM", out.getSymbol());
     assertEquals(247.13, out.getPrice());
@@ -94,50 +124,99 @@ class SearchStockInteractorTest {
   }
 
   @Test
-  void tickerIsTrimmedAndUppercasedBeforeLookup() {
-    interactor.execute(new SearchStockInputData("  ibm "));
+  void tickerIsTrimmedAndUppercased() {
+    search("  aapl ");
 
-    assertEquals(List.of("IBM", "IBM"), data.requested);
-    assertEquals("IBM", presenter.success.getSymbol());
+    assertEquals(List.of("AAPL", "AAPL"), data.requested);
+    assertEquals("AAPL", presenter.success.getSymbol());
   }
 
   @Test
-  void blankTickerFailsWithoutCallingTheApi() {
-    interactor.execute(new SearchStockInputData("   "));
+  void companyNameShowsTopFiveMatchesBestFirstWithoutCallingTheApi() {
+    search("apple");
 
-    assertEquals("Please enter a ticker symbol.", presenter.error);
+    assertNull(presenter.success);
+    SearchStockMatchesOutputData out = presenter.matches;
+    assertEquals("apple", out.getQuery());
+    assertEquals(SearchStockInteractor.MAX_MATCHES, out.getSymbols().size());
+    assertEquals("AAPL", out.getSymbols().get(0));
+    assertEquals("Apple Inc", out.getNames().get(0));
+    assertEquals("NASDAQ", out.getExchanges().get(0));
     assertTrue(data.requested.isEmpty());
   }
 
   @Test
-  void nullTickerFailsWithoutCallingTheApi() {
-    interactor.execute(new SearchStockInputData(null));
+  void pickingAMatchSearchesItsTicker() {
+    search("apple");
+    String picked = presenter.matches.getSymbols().get(0);
 
-    assertEquals("Please enter a ticker symbol.", presenter.error);
+    search(picked);
+
+    assertEquals("AAPL", presenter.success.getSymbol());
+  }
+
+  @Test
+  void nothingMatchingAndNotATickerFails() {
+    search("no such company");
+
+    assertEquals("No stocks match \"no such company\".", presenter.error);
     assertTrue(data.requested.isEmpty());
   }
 
   @Test
-  void invalidCharactersFailWithoutCallingTheApi() {
-    interactor.execute(new SearchStockInputData("AP PL!"));
+  void tickerNotInListWithNoNameMatchIsStillTried() {
+    search("SHOP.TO");
 
-    assertTrue(presenter.error.contains("isn't a valid ticker"));
-    assertTrue(data.requested.isEmpty());
+    assertEquals("SHOP.TO", presenter.success.getSymbol());
   }
 
   @Test
   void unknownTickerReportsTheDataError() {
-    interactor.execute(new SearchStockInputData("XYZ"));
+    search("NOPE");
 
     assertEquals("No quote found for that symbol", presenter.error);
     assertNull(presenter.success);
   }
 
   @Test
-  void unavailableDataReportsTheDataError() {
+  void blankSearchFailsWithoutCallingTheApi() {
+    search("   ");
+
+    assertEquals("Please enter a ticker symbol or company name.", presenter.error);
+    assertTrue(data.requested.isEmpty());
+  }
+
+  @Test
+  void nullSearchFailsWithoutCallingTheApi() {
+    search(null);
+
+    assertEquals("Please enter a ticker symbol or company name.", presenter.error);
+    assertTrue(data.requested.isEmpty());
+  }
+
+  @Test
+  void withoutTheStockListATickerIsStillTried() {
+    listings.unavailable = true;
+
+    search("IBM");
+
+    assertEquals("IBM", presenter.success.getSymbol());
+  }
+
+  @Test
+  void withoutTheStockListANameSearchFails() {
+    listings.unavailable = true;
+
+    search("apple inc");
+
+    assertEquals("Could not load the stock list", presenter.error);
+  }
+
+  @Test
+  void unavailablePriceDataReportsTheDataError() {
     data.unavailable = true;
 
-    interactor.execute(new SearchStockInputData("IBM"));
+    search("IBM");
 
     assertEquals("daily request limit reached", presenter.error);
     assertNull(presenter.success);

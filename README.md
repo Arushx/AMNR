@@ -49,15 +49,38 @@ View past strategies and view strategy performance.
 | Name | Use Case |
 ---
 ## Entities
-### Entity 1
-Stock
-### Entity 2
-(Add additional entities as needed.)
+### PricePoint
+One trading day of a stock's prices.
+- **Fields:** `date`, `open`, `high`, `low`, `close`, `volume`
+- **Rules:** prices are positive, the low is not above the high, volume is not negative
+
+### PriceHistory
+A stock's daily prices, always ordered from oldest to newest.
+- **Fields:** `symbol`, `points` (list of `PricePoint`)
+- **Methods:** `between(start, end)`, `getLatest()`, `getHighestClose()` (peak), `getLowestClose()` (dip)
+- **Rules:** the symbol is not blank; no two days share a date
+
+### Quote
+The latest price of a stock and how much it moved since the previous close.
+- **Fields:** `symbol`, `price`, `change`, `changePercent`, `latestTradingDay`
+
+(More entities, such as a watchlist, will be added with their use cases.)
 ---
 ## API Usage
-**API Name:**
-**Documentation:** [Link]
+**API Name:** Alpha Vantage (stock market data)
+
+**Documentation:** https://www.alphavantage.co/documentation/
+
 **How it is used in the program:**
+- `GLOBAL_QUOTE`: the latest price and daily change for a stock (search and watchlist).
+- `TIME_SERIES_DAILY`: the last 100 trading days of prices for a stock (historical charts, pair comparison, peaks and dips).
+- Planned: `SYMBOL_SEARCH` to look stocks up by company name, and `NEWS_SENTIMENT` for news around price peaks and dips (to be confirmed, as it may require a paid key).
+
+**Called successfully?** Yes for `GLOBAL_QUOTE` and `TIME_SERIES_DAILY` (with Alpha Vantage's demo key; real responses are saved in `src/test/resources/alphavantage/` and used by our tests). A check with our own key is pending.
+
+**Limits:** the free key allows 25 requests per day, so tests use saved responses instead of the live API.
+
+**Setup:** set your key in the environment variable `ALPHA_VANTAGE_API_KEY` (for example in IntelliJ: *Run* → *Edit Configurations* → *Environment variables*). Never commit a key.
 ---
 ## Design Diagrams
 ### UML Class Diagram

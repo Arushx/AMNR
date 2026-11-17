@@ -219,3 +219,11 @@ what we added, and what I learned.
 - The interfaces are shared and small (one kind of data each) instead of one per use case, because no use case exists yet. Any use case can depend on just the one it needs (ISP). One DAO implements both.
 - The DAO receives the client and parser through its constructor (dependency injection), which is why the test can pass in a fake client.
 - Nothing in `use_case` imports `data_access`, so the Dependency Rule holds.
+
+---
+
+## 13. README: entities and API sections
+
+**Added:** filled in the README's **Entities** section (`PricePoint`, `PriceHistory`, `Quote`, with fields and rules) and **API Usage** section (Alpha Vantage, docs link, which endpoints are used for what, whether they've been called successfully, the 25/day limit, and key setup).
+
+**Learned:** the course README must say whether each API was **called successfully**. Ours is honest: it works with the demo key; the check with my own key is still pending.

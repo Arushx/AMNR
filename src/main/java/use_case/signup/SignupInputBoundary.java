@@ -1,4 +1,12 @@
-package use_case.login;
+package use_case.signup;
 
-public class SignupInputBoundary {
+/** Entry point the signup controller calls to run the signup use case. */
+public interface SignupInputBoundary {
+
+  /**
+   * Tries to create an account. The result is reported through {@link SignupOutputBoundary}.
+   *
+   * @param inputData what the user typed
+   */
+  void execute(SignupInputData inputData);
 }

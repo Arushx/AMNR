@@ -155,3 +155,67 @@ what we added, and what I learned.
 - Bad data that breaks an entity rule (e.g. a price of 0) is also treated as a bad response.
 
 **Not done yet:** nothing calls this from `AppBuilder`; it will be used by the DAO that implements a use case's data access interface.
+
+---
+
+## 9. Team CLAUDE.md for AI tools
+
+**Added** (branch `docs/team-ai-guide`, from `main`): `CLAUDE.md` at the repo root, plus `AGENTS.md`, which points Codex and other tools to it.
+
+**What it covers:** course requirements, the package/layer table and Dependency Rule, the 7-step CA flow, `AppBuilder` wiring, SOLID with examples, patterns that count for the rubric, Java 11 limits, CheckStyle, Alpha Vantage rules (key, 25/day, HTTP-200 errors), Swing threading, testing with fakes, the README spec format, diagrams, the Git/PR workflow, and the team contract's AI rules.
+
+**Learned:** Claude Code reads `CLAUDE.md` automatically; Codex reads `AGENTS.md`. Putting the rules in the repo means every teammate's AI follows the same CA/SOLID rules, not just mine.
+
+---
+
+## 10. Walkthrough: every file, and where the Data Access Interface fits
+
+**Talked about:** why each file exists; what data access interface the Alpha Vantage classes implement.
+
+**Learned:**
+- `AlphaVantageClient` and `AlphaVantageParser` implement **no interface**. They're helpers that know HTTP and JSON. They don't belong to any use case.
+- A **Data Access Interface** is declared by a *use case* (in `use_case/<name>/`), in entity terms only, e.g. `PriceHistory getDailyHistory(String symbol)`.
+- A DAO in `data_access` (e.g. `AlphaVantageStockDataAccessObject`) **implements** it by calling client → parser, and translates `AlphaVantageException` into a use-case exception, because the interactor isn't allowed to know about `data_access`.
+- That's DIP (the interactor depends on its own interface), ISP (small interface per use case; one DAO can implement several), and it makes interactor tests easy with a fake DAO.
+
+**Next:** pick which use case I lead, then write its interface first.
+
+---
+
+## 11. The CA engine slide and "implementing from below"
+
+**Talked about:** the CA engine diagram (lecture 7, slide 37), and how a lower layer implements an interface owned by a higher layer.
+
+**Learned:**
+- The Dependency Rule is about **source code direction**, not data flow. Outer code may depend on inner code; inner code never names outer code.
+- `Data Access` (outer, blue) **implements** `Data Access Interface` (inner, pink): the hollow-triangle arrow points up/inward. So the interactor calls the interface, and at runtime the real DAO answers.
+- Mapping to our code: Entities ✅; "Database" = Alpha Vantage via `AlphaVantageClient` + `AlphaVantageParser` ✅; "Data Access" box = the DAO we still need, which implements the use case's interface.
+- Keep a thin DAO above the client/parser (SRP + translating `AlphaVantageException` into a use-case exception), instead of making the client implement the interface directly.
+
+---
+
+## 12. Data Access Interface + Data Access (matching the CA engine)
+
+**Talked about:** making the data side match the CA engine slide, without building a whole use case yet.
+
+**Added:**
+- `use_case/QuoteDataAccessInterface`: `Quote getQuote(String symbol)`.
+- `use_case/PriceHistoryDataAccessInterface`: `PriceHistory getDailyHistory(String symbol)`.
+- `use_case/StockDataUnavailableException`: the one error the use cases see.
+- `data_access/AlphaVantageStockDataAccessObject`: **implements both interfaces**, calling client → parser, and converting `AlphaVantageException` into `StockDataUnavailableException`.
+- `AlphaVantageStockDataAccessObjectTest`: uses a `FakeClient` (subclass returning saved JSON, or failing), so no network. 31 tests pass.
+
+**How it maps to the slide:**
+
+| Slide box | Our class |
+|---|---|
+| Entities | `PricePoint`, `PriceHistory`, `Quote` |
+| Data Access Interface `<I>` | `QuoteDataAccessInterface`, `PriceHistoryDataAccessInterface` |
+| Data Access | `AlphaVantageStockDataAccessObject` |
+| Database | Alpha Vantage, via `AlphaVantageClient` + `AlphaVantageParser` |
+
+**Learned:**
+- The interfaces live in `use_case` (inner), and the DAO in `data_access` (outer) implements them: "implementing from below".
+- The interfaces are shared and small (one kind of data each) instead of one per use case, because no use case exists yet. Any use case can depend on just the one it needs (ISP). One DAO implements both.
+- The DAO receives the client and parser through its constructor (dependency injection), which is why the test can pass in a fake client.
+- Nothing in `use_case` imports `data_access`, so the Dependency Rule holds.

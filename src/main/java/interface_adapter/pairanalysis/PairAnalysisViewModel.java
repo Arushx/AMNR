@@ -16,26 +16,24 @@ public class PairAnalysisViewModel {
 
   private final PropertyChangeSupport support = new PropertyChangeSupport(this);
 
-  private String firstTicker = "";
-  private String secondTicker = "";
+  private String pairText = "";
   private String correlationText = "";
   private String detailText = "";
   private String error;
+  private String firstSymbolError;
+  private String secondSymbolError;
 
-  public String getFirstTicker() {
-    return firstTicker;
+  /**
+   * Returns the stocks that were compared, e.g. "KO (Coca-Cola Co) &amp; PEP (PepsiCo Inc)".
+   *
+   * @return the text, or "" when there is no result
+   */
+  public String getPairText() {
+    return pairText;
   }
 
-  public void setFirstTicker(String firstTicker) {
-    this.firstTicker = firstTicker;
-  }
-
-  public String getSecondTicker() {
-    return secondTicker;
-  }
-
-  public void setSecondTicker(String secondTicker) {
-    this.secondTicker = secondTicker;
+  public void setPairText(String pairText) {
+    this.pairText = pairText;
   }
 
   public String getCorrelationText() {
@@ -55,7 +53,7 @@ public class PairAnalysisViewModel {
   }
 
   /**
-   * Returns the error to show.
+   * Returns the error about the request as a whole.
    *
    * @return the message, or null when there is no error
    */
@@ -64,12 +62,48 @@ public class PairAnalysisViewModel {
   }
 
   /**
-   * Sets the error to show.
+   * Sets the error about the request as a whole.
    *
    * @param error the message, or null for none
    */
   public void setError(String error) {
     this.error = error;
+  }
+
+  /**
+   * Returns the problem with the first symbol field.
+   *
+   * @return the message, or null when the field is fine
+   */
+  public String getFirstSymbolError() {
+    return firstSymbolError;
+  }
+
+  /**
+   * Sets the problem with the first symbol field.
+   *
+   * @param firstSymbolError the message, or null for none
+   */
+  public void setFirstSymbolError(String firstSymbolError) {
+    this.firstSymbolError = firstSymbolError;
+  }
+
+  /**
+   * Returns the problem with the second symbol field.
+   *
+   * @return the message, or null when the field is fine
+   */
+  public String getSecondSymbolError() {
+    return secondSymbolError;
+  }
+
+  /**
+   * Sets the problem with the second symbol field.
+   *
+   * @param secondSymbolError the message, or null for none
+   */
+  public void setSecondSymbolError(String secondSymbolError) {
+    this.secondSymbolError = secondSymbolError;
   }
 
   /**

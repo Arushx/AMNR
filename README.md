@@ -64,7 +64,11 @@ A stock's daily prices, always ordered from oldest to newest.
 The latest price of a stock and how much it moved since the previous close.
 - **Fields:** `symbol`, `price`, `change`, `changePercent`, `latestTradingDay`
 
-(More entities, such as a watchlist, will be added with their use cases.)
+### Watchlist
+The ticker symbols one user has saved, in the order they were added. Stored in the `watchlist` table of the local SQLite database.
+- **Fields:** `username`, `symbols` (list of ticker symbols)
+- **Methods:** `contains(symbol)`, `withSymbol(symbol)`, `withoutSymbol(symbol)` (both return a new watchlist)
+- **Rules:** symbols are stored trimmed and uppercase (1–5 letters, optionally a class letter such as `BRK.B`); no symbol appears twice
 ---
 ## API Usage
 **API Name:** Alpha Vantage (stock market data)

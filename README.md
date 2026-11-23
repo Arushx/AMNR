@@ -35,24 +35,29 @@ Search stocks by name and ticker and view historical data.
 ### Use Case 2
 Save stocks to a watchlist for easy reference/monitoring
 ### Use Case 3
-Compare historical data for two stocks and calculate correlations between the stocks.
+Compare historical data for two stocks and calculate correlations between the stocks' daily returns.
 ### Use Case 4
-View stock data for a specified date range.
-### Use Case 5
 Tell the user of popular news events that occurred at the moment a specific stock peaked or dipped.
-### Use Case 6
+### Use Case 5
 View past strategies and view strategy performance.
+### Use Case 6
+User alert for stock price 
 ### Use Case 7
-Create the stock price alert feature to notify the user when the price/trend hit their desired range.
+Asymmetric semantic search for stocks
+### Use Case 8
+N/A
+
+
 
 (Add additional use cases as needed.)
 ---
 ## Minimal Viable Product (MVP)
 | Team Member | MVP Use Case |
 |-------------|--------------|
-| Arush Gupta | Use Case 1|
-| Matteo Grassia| Use Case 2|
-| Name | Use Case |
+| Arush Gupta | Use Case 1,7|
+| Matteo Grassia| Use Case 3,5|
+| Reuben Mathew | Use Case 4,8|
+| Andrew Tu | Use Case 2, 6|
 ---
 ## Entities
 ### PricePoint

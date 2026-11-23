@@ -1,0 +1,46 @@
+[
+  {
+    "category": "company",
+    "datetime": 1772543700,
+    "headline": "ACME shares plunge after regulators open probe",
+    "id": 1001,
+    "image": "",
+    "related": "ACME",
+    "source": "Example Wire",
+    "summary": "Regulators opened an investigation into ACME's accounting.",
+    "url": "https://example.com/acme-probe"
+  },
+  {
+    "category": "company",
+    "datetime": 1772685000,
+    "headline": "ACME and BETA announce partnership",
+    "id": 1002,
+    "image": "",
+    "related": "ACME,BETA",
+    "source": "Example News",
+    "summary": "",
+    "url": "https://example.com/acme-beta"
+  },
+  {
+    "category": "company",
+    "datetime": 1772463600,
+    "headline": "",
+    "id": 1003,
+    "image": "",
+    "related": "ACME",
+    "source": "Example News",
+    "summary": "Item with no headline, should be skipped.",
+    "url": "https://example.com/no-headline"
+  },
+  {
+    "category": "company",
+    "datetime": 0,
+    "headline": "Item with no time",
+    "id": 1004,
+    "image": "",
+    "related": "ACME",
+    "source": "Example News",
+    "summary": "",
+    "url": "https://example.com/no-time"
+  }
+]

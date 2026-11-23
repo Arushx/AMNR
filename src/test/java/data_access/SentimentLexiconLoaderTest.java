@@ -29,7 +29,8 @@ class SentimentLexiconLoaderTest {
         "Word,Seq_num,Negative,Positive\n"
             + "LOSS,1,2009,0\n"
             + "GAIN,2,0,2009\n"
-            + "TABLE,3,0,0\n";
+            + "TABLE,3,0,0\n"
+            + "CLOSING,4,-2020,0\n";
 
     SentimentLexicon lexicon = new SentimentLexiconLoader().load(text(dictionary));
 
@@ -37,6 +38,7 @@ class SentimentLexiconLoaderTest {
     assertTrue(lexicon.isPositive("gain"));
     assertFalse(lexicon.isPositive("table"));
     assertFalse(lexicon.isNegative("table"));
+    assertFalse(lexicon.isNegative("closing"), "a negative year means the word was removed");
   }
 
   @Test
@@ -50,9 +52,12 @@ class SentimentLexiconLoaderTest {
   void loadsTheBundledDictionary() throws IOException {
     SentimentLexicon lexicon = new SentimentLexiconLoader().loadDefault();
 
-    // Counts of marked words in the 1993-2025 dictionary.
-    assertEquals(2355, lexicon.negativeCount());
-    assertEquals(354, lexicon.positiveCount());
+    // Words with a positive year in the 1993-2025 dictionary. Another 10 negative and 7 positive
+    // words carry -2020 (removed in 2020) and are left out.
+    assertEquals(2345, lexicon.negativeCount());
+    assertEquals(347, lexicon.positiveCount());
+    assertFalse(lexicon.isNegative("closing"));
+    assertFalse(lexicon.isPositive("effective"));
     assertTrue(lexicon.isNegative("downgrade"));
     assertTrue(lexicon.isPositive("gain"));
   }

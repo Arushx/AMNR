@@ -14,8 +14,10 @@ import use_case.explain_movement.SentimentLexicon;
  * Builds a {@link SentimentLexicon} from the Loughran-McDonald Master Dictionary in {@code
  * src/main/resources/sentiment/}.
  *
- * <p>A word is in a list when its "Positive" or "Negative" column is not 0 (the column holds the
- * year the word was added). Words with 0 in both columns are in the file but carry no sentiment.
+ * <p>The "Positive" and "Negative" columns hold a year: a positive year (e.g. 2009) is when the
+ * word was added to that list, a negative year (e.g. -2020) is when it was removed, and 0 means it
+ * was never in it. So a word is in a list only when its column holds a positive year. Words with 0
+ * in both columns are in the file but carry no sentiment.
  */
 public class SentimentLexiconLoader {
 
@@ -76,9 +78,13 @@ public class SentimentLexiconLoader {
     }
   }
 
+  /** True when the cell holds a positive year (added to the list and not removed). */
   private static boolean isMarked(String cell) {
-    final String value = cell.trim();
-    return !value.isEmpty() && !"0".equals(value);
+    try {
+      return Integer.parseInt(cell.trim()) > 0;
+    } catch (NumberFormatException e) {
+      return false;
+    }
   }
 
   private static String stripBom(String text) {

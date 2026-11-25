@@ -1,7 +1,6 @@
 package interface_adapter.signup;
 
 import interface_adapter.ViewManagerModel;
-import interface_adapter.login.LoginState;
 import interface_adapter.login.LoginViewModel;
 import use_case.signup.SignupOutputBoundary;
 import use_case.signup.SignupOutputData;
@@ -21,8 +20,8 @@ public class SignupPresenter implements SignupOutputBoundary {
    * Creates the presenter.
    *
    * @param viewManagerModel switches the active view
-   * @param signupViewModel the signup view's state
-   * @param loginViewModel the login view's state
+   * @param signupViewModel what the signup view shows
+   * @param loginViewModel what the login view shows
    */
   public SignupPresenter(
       ViewManagerModel viewManagerModel,
@@ -35,19 +34,24 @@ public class SignupPresenter implements SignupOutputBoundary {
 
   @Override
   public void prepareSuccessView(SignupOutputData outputData) {
-    signupViewModel.setState(new SignupState());
+    signupViewModel.setUsername("");
+    signupViewModel.setPassword("");
+    signupViewModel.setRepeatPassword("");
+    signupViewModel.setError(null);
     signupViewModel.firePropertyChange();
 
-    loginViewModel.setState(new LoginState(outputData.getUsername(), "", null));
+    loginViewModel.setUsername(outputData.getUsername());
+    loginViewModel.setPassword("");
+    loginViewModel.setError(null);
     loginViewModel.firePropertyChange();
 
-    viewManagerModel.setState(loginViewModel.getViewName());
+    viewManagerModel.setActiveView(loginViewModel.getViewName());
     viewManagerModel.firePropertyChange();
   }
 
   @Override
   public void prepareFailView(String errorMessage) {
-    signupViewModel.setState(signupViewModel.getState().withError(errorMessage));
+    signupViewModel.setError(errorMessage);
     signupViewModel.firePropertyChange();
   }
 }

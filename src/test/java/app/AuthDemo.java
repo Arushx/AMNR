@@ -3,19 +3,15 @@ package app;
 import data_access.SqliteUserDataAccessObject;
 import data_access.SqliteWatchlistDataAccessObject;
 import interface_adapter.ViewManagerModel;
-import interface_adapter.logged_in.LoggedInState;
 import interface_adapter.logged_in.LoggedInViewModel;
 import interface_adapter.login.LoginController;
 import interface_adapter.login.LoginPresenter;
-import interface_adapter.login.LoginState;
 import interface_adapter.login.LoginViewModel;
 import interface_adapter.signup.SignupController;
 import interface_adapter.signup.SignupPresenter;
-import interface_adapter.signup.SignupState;
 import interface_adapter.signup.SignupViewModel;
 import interface_adapter.watchlist.WatchlistController;
 import interface_adapter.watchlist.WatchlistPresenter;
-import interface_adapter.watchlist.WatchlistState;
 import interface_adapter.watchlist.WatchlistViewModel;
 import java.util.Scanner;
 import use_case.UserStorageException;
@@ -82,13 +78,15 @@ public class AuthDemo {
         signup.execute(ask(in, "Username"), ask(in, "Password"), ask(in, "Repeat password"));
       } else if ("2".equals(choice)) {
         login.execute(ask(in, "Username"), ask(in, "Password"));
-        watchlist.view(loggedInViewModel.getState().getUsername());
+        if (LoggedInViewModel.VIEW_NAME.equals(viewManagerModel.getActiveView())) {
+          watchlist.view(loggedInViewModel.getUsername());
+        }
       } else if ("3".equals(choice)) {
-        watchlist.add(loggedInViewModel.getState().getUsername(), ask(in, "Ticker"));
+        watchlist.add(loggedInViewModel.getUsername(), ask(in, "Ticker"));
       } else if ("4".equals(choice)) {
-        watchlist.remove(loggedInViewModel.getState().getUsername(), ask(in, "Ticker"));
+        watchlist.remove(loggedInViewModel.getUsername(), ask(in, "Ticker"));
       } else if ("5".equals(choice)) {
-        watchlist.view(loggedInViewModel.getState().getUsername());
+        watchlist.view(loggedInViewModel.getUsername());
       } else if ("q".equalsIgnoreCase(choice)) {
         return;
       }
@@ -102,30 +100,31 @@ public class AuthDemo {
       LoginViewModel loginViewModel,
       LoggedInViewModel loggedInViewModel) {
     viewManagerModel.addPropertyChangeListener(
-        event -> System.out.println("[view] now showing: " + event.getNewValue()));
+        event -> System.out.println("[view] now showing: " + viewManagerModel.getActiveView()));
     signupViewModel.addPropertyChangeListener(
-        event -> printError("sign up", ((SignupState) event.getNewValue()).getError()));
+        event -> printError("sign up", signupViewModel.getError()));
     loginViewModel.addPropertyChangeListener(
-        event -> printError("log in", ((LoginState) event.getNewValue()).getError()));
+        event -> printError("log in", loginViewModel.getError()));
     loggedInViewModel.addPropertyChangeListener(
-        event ->
-            System.out.println(
-                "[logged in] Welcome, " + ((LoggedInState) event.getNewValue()).getUsername()));
+        event -> System.out.println("[logged in] Welcome, " + loggedInViewModel.getUsername()));
   }
 
   /** Prints the watchlist, or the error, whenever the watchlist view model fires. */
   private static void addWatchlistListener(WatchlistViewModel watchlistViewModel) {
     watchlistViewModel.addPropertyChangeListener(
         event -> {
-          final WatchlistState state = (WatchlistState) event.getNewValue();
-          if (state.getError() != null) {
-            printError("watchlist", state.getError());
+          if (watchlistViewModel.getError() != null) {
+            printError("watchlist", watchlistViewModel.getError());
             return;
           }
-          if (state.getMessage() != null) {
-            System.out.println("[watchlist] " + state.getMessage());
+          if (watchlistViewModel.getMessage() != null) {
+            System.out.println("[watchlist] " + watchlistViewModel.getMessage());
           }
-          System.out.println("[watchlist] " + state.getUsername() + ": " + state.getSymbols());
+          System.out.println(
+              "[watchlist] "
+                  + watchlistViewModel.getUsername()
+                  + ": "
+                  + watchlistViewModel.getSymbols());
         });
   }
 

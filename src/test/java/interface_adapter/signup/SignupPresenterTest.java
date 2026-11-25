@@ -38,32 +38,37 @@ class SignupPresenterTest {
   void successSwitchesToLoginWithUsernameFilledIn() {
     presenter.prepareSuccessView(new SignupOutputData("andrew"));
 
-    assertEquals(LoginViewModel.VIEW_NAME, viewManagerModel.getState());
+    assertEquals(LoginViewModel.VIEW_NAME, viewManagerModel.getActiveView());
     assertEquals(1, viewManagerEvents.size());
-    assertEquals("andrew", loginViewModel.getState().getUsername());
-    assertNull(loginViewModel.getState().getError());
+    assertEquals("andrew", loginViewModel.getUsername());
+    assertNull(loginViewModel.getError());
   }
 
   @Test
   void successClearsSignupForm() {
-    signupViewModel.setState(new SignupState("andrew", "pw", "pw", "old error"));
+    signupViewModel.setUsername("andrew");
+    signupViewModel.setPassword("pw");
+    signupViewModel.setRepeatPassword("pw");
+    signupViewModel.setError("old error");
 
     presenter.prepareSuccessView(new SignupOutputData("andrew"));
 
-    SignupState state = signupViewModel.getState();
-    assertEquals("", state.getUsername());
-    assertEquals("", state.getPassword());
-    assertNull(state.getError());
+    assertEquals("", signupViewModel.getUsername());
+    assertEquals("", signupViewModel.getPassword());
+    assertEquals("", signupViewModel.getRepeatPassword());
+    assertNull(signupViewModel.getError());
   }
 
   @Test
   void failureShowsErrorAndStaysOnSignup() {
-    signupViewModel.setState(new SignupState("andrew", "pw", "pw2", null));
+    signupViewModel.setUsername("andrew");
+    signupViewModel.setPassword("pw");
+    signupViewModel.setRepeatPassword("pw2");
 
     presenter.prepareFailView("Passwords do not match");
 
-    assertEquals("Passwords do not match", signupViewModel.getState().getError());
-    assertEquals("andrew", signupViewModel.getState().getUsername());
+    assertEquals("Passwords do not match", signupViewModel.getError());
+    assertEquals("andrew", signupViewModel.getUsername());
     assertEquals(1, signupEvents.size());
     assertTrue(viewManagerEvents.isEmpty());
   }

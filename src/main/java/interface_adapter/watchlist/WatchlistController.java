@@ -7,7 +7,7 @@ import use_case.watchlist.WatchlistInputData;
  * Turns watchlist actions in the view into calls to the watchlist use case.
  *
  * <p>Takes plain strings so it has no dependency on Swing; the view passes the username from
- * {@code LoggedInState}. Validation happens in the use case.
+ * {@code LoggedInViewModel}. Validation happens in the use case.
  */
 public class WatchlistController {
 

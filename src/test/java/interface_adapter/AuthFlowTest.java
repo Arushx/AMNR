@@ -41,11 +41,11 @@ class AuthFlowTest {
                 dao, new SignupPresenter(viewManagerModel, signupViewModel, loginViewModel)));
 
     signup.execute("demo", "demo", "demo");
-    assertEquals(LoginViewModel.VIEW_NAME, viewManagerModel.getState());
-    assertEquals("demo", loginViewModel.getState().getUsername());
+    assertEquals(LoginViewModel.VIEW_NAME, viewManagerModel.getActiveView());
+    assertEquals("demo", loginViewModel.getUsername());
 
     signup.execute("demo", "other", "other");
-    assertEquals("Username already exists", signupViewModel.getState().getError());
+    assertEquals("Username already exists", signupViewModel.getError());
 
     SqliteUserDataAccessObject reopened = new SqliteUserDataAccessObject(dbPath);
     LoginController login =
@@ -55,12 +55,12 @@ class AuthFlowTest {
                 new LoginPresenter(viewManagerModel, loginViewModel, loggedInViewModel)));
 
     login.execute("demo", "wrong");
-    assertEquals("Incorrect password", loginViewModel.getState().getError());
-    assertEquals(LoginViewModel.VIEW_NAME, viewManagerModel.getState());
+    assertEquals("Incorrect password", loginViewModel.getError());
+    assertEquals(LoginViewModel.VIEW_NAME, viewManagerModel.getActiveView());
 
     login.execute("DEMO", "demo");
-    assertEquals(LoggedInViewModel.VIEW_NAME, viewManagerModel.getState());
-    assertEquals("demo", loggedInViewModel.getState().getUsername());
-    assertNull(loginViewModel.getState().getError());
+    assertEquals(LoggedInViewModel.VIEW_NAME, viewManagerModel.getActiveView());
+    assertEquals("demo", loggedInViewModel.getUsername());
+    assertNull(loginViewModel.getError());
   }
 }

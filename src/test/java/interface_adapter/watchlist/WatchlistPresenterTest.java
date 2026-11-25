@@ -27,12 +27,11 @@ class WatchlistPresenterTest {
 
   @Test
   void startsEmpty() {
-    WatchlistState state = viewModel.getState();
 
-    assertEquals("", state.getUsername());
-    assertEquals(List.of(), state.getSymbols());
-    assertNull(state.getMessage());
-    assertNull(state.getError());
+    assertEquals("", viewModel.getUsername());
+    assertEquals(List.of(), viewModel.getSymbols());
+    assertNull(viewModel.getMessage());
+    assertNull(viewModel.getError());
   }
 
   @Test
@@ -40,11 +39,10 @@ class WatchlistPresenterTest {
     presenter.prepareSuccessView(
         new WatchlistOutputData("andrew", List.of("AAPL", "MSFT"), "Added MSFT"));
 
-    WatchlistState state = viewModel.getState();
-    assertEquals("andrew", state.getUsername());
-    assertEquals(List.of("AAPL", "MSFT"), state.getSymbols());
-    assertEquals("Added MSFT", state.getMessage());
-    assertNull(state.getError());
+    assertEquals("andrew", viewModel.getUsername());
+    assertEquals(List.of("AAPL", "MSFT"), viewModel.getSymbols());
+    assertEquals("Added MSFT", viewModel.getMessage());
+    assertNull(viewModel.getError());
     assertEquals(1, events.size());
   }
 
@@ -54,7 +52,7 @@ class WatchlistPresenterTest {
 
     presenter.prepareSuccessView(new WatchlistOutputData("andrew", List.of("AAPL"), "Added AAPL"));
 
-    assertNull(viewModel.getState().getError());
+    assertNull(viewModel.getError());
   }
 
   @Test
@@ -63,8 +61,8 @@ class WatchlistPresenterTest {
 
     presenter.prepareSuccessView(new WatchlistOutputData("bob", List.of(), null));
 
-    assertEquals("bob", viewModel.getState().getUsername());
-    assertEquals(List.of(), viewModel.getState().getSymbols());
+    assertEquals("bob", viewModel.getUsername());
+    assertEquals(List.of(), viewModel.getSymbols());
   }
 
   @Test
@@ -73,10 +71,9 @@ class WatchlistPresenterTest {
 
     presenter.prepareFailView("AAPL is already in your watchlist");
 
-    WatchlistState state = viewModel.getState();
-    assertEquals(List.of("AAPL"), state.getSymbols());
-    assertEquals("AAPL is already in your watchlist", state.getError());
-    assertNull(state.getMessage());
+    assertEquals(List.of("AAPL"), viewModel.getSymbols());
+    assertEquals("AAPL is already in your watchlist", viewModel.getError());
+    assertNull(viewModel.getMessage());
   }
 
   @Test
@@ -88,10 +85,10 @@ class WatchlistPresenterTest {
   }
 
   @Test
-  void stateSymbolsCannotBeModified() {
+  void symbolsCannotBeModified() {
     presenter.prepareSuccessView(new WatchlistOutputData("andrew", List.of("AAPL"), null));
 
     assertThrows(
-        UnsupportedOperationException.class, () -> viewModel.getState().getSymbols().add("MSFT"));
+        UnsupportedOperationException.class, () -> viewModel.getSymbols().add("MSFT"));
   }
 }

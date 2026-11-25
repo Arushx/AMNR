@@ -14,7 +14,7 @@ public class WatchlistPresenter implements WatchlistOutputBoundary {
   /**
    * Creates the presenter.
    *
-   * @param watchlistViewModel the watchlist view's state
+   * @param watchlistViewModel what the watchlist view shows
    */
   public WatchlistPresenter(WatchlistViewModel watchlistViewModel) {
     this.watchlistViewModel = watchlistViewModel;
@@ -22,15 +22,17 @@ public class WatchlistPresenter implements WatchlistOutputBoundary {
 
   @Override
   public void prepareSuccessView(WatchlistOutputData outputData) {
-    watchlistViewModel.setState(
-        new WatchlistState(
-            outputData.getUsername(), outputData.getSymbols(), outputData.getMessage(), null));
+    watchlistViewModel.setUsername(outputData.getUsername());
+    watchlistViewModel.setSymbols(outputData.getSymbols());
+    watchlistViewModel.setMessage(outputData.getMessage());
+    watchlistViewModel.setError(null);
     watchlistViewModel.firePropertyChange();
   }
 
   @Override
   public void prepareFailView(String errorMessage) {
-    watchlistViewModel.setState(watchlistViewModel.getState().withError(errorMessage));
+    watchlistViewModel.setMessage(null);
+    watchlistViewModel.setError(errorMessage);
     watchlistViewModel.firePropertyChange();
   }
 }

@@ -41,31 +41,34 @@ class LoginPresenterTest {
   void successSwitchesToLoggedInWithUsername() {
     presenter.prepareSuccessView(new LoginOutputData("Andrew"));
 
-    assertEquals(LoggedInViewModel.VIEW_NAME, viewManagerModel.getState());
+    assertEquals(LoggedInViewModel.VIEW_NAME, viewManagerModel.getActiveView());
     assertEquals(1, viewManagerEvents.size());
-    assertEquals("Andrew", loggedInViewModel.getState().getUsername());
+    assertEquals("Andrew", loggedInViewModel.getUsername());
     assertEquals(1, loggedInEvents.size());
   }
 
   @Test
   void successClearsLoginForm() {
-    loginViewModel.setState(new LoginState("Andrew", "pw", "old error"));
+    loginViewModel.setUsername("Andrew");
+    loginViewModel.setPassword("pw");
+    loginViewModel.setError("old error");
 
     presenter.prepareSuccessView(new LoginOutputData("Andrew"));
 
-    assertEquals("", loginViewModel.getState().getUsername());
-    assertEquals("", loginViewModel.getState().getPassword());
-    assertNull(loginViewModel.getState().getError());
+    assertEquals("", loginViewModel.getUsername());
+    assertEquals("", loginViewModel.getPassword());
+    assertNull(loginViewModel.getError());
   }
 
   @Test
   void failureShowsErrorAndStaysOnLogin() {
-    loginViewModel.setState(new LoginState("Andrew", "wrong", null));
+    loginViewModel.setUsername("Andrew");
+    loginViewModel.setPassword("wrong");
 
     presenter.prepareFailView("Incorrect password");
 
-    assertEquals("Incorrect password", loginViewModel.getState().getError());
-    assertEquals("Andrew", loginViewModel.getState().getUsername());
+    assertEquals("Incorrect password", loginViewModel.getError());
+    assertEquals("Andrew", loginViewModel.getUsername());
     assertEquals(1, loginEvents.size());
     assertTrue(viewManagerEvents.isEmpty());
     assertTrue(loggedInEvents.isEmpty());

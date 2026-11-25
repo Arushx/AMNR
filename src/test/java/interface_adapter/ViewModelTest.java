@@ -1,54 +1,51 @@
 package interface_adapter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ViewModelTest {
 
-  @Test
-  void storesViewNameAndInitialState() {
-    ViewModel<String> viewModel = new ViewModel<>("demo", "start");
+  private ViewManagerModel viewModel;
+  private List<PropertyChangeEvent> events;
 
-    assertEquals("demo", viewModel.getViewName());
-    assertEquals("start", viewModel.getState());
+  @BeforeEach
+  void setUp() {
+    viewModel = new ViewManagerModel();
+    events = new ArrayList<>();
+    viewModel.addPropertyChangeListener(events::add);
   }
 
   @Test
-  void setStateDoesNotNotifyUntilFired() {
-    ViewModel<String> viewModel = new ViewModel<>("demo", "start");
-    List<PropertyChangeEvent> events = new ArrayList<>();
-    viewModel.addPropertyChangeListener(events::add);
+  void storesViewName() {
+    assertEquals("view manager", viewModel.getViewName());
+  }
 
-    viewModel.setState("next");
+  @Test
+  void settingFieldsDoesNotNotifyUntilFired() {
+    viewModel.setActiveView("next");
 
     assertTrue(events.isEmpty());
   }
 
   @Test
-  void firePropertyChangeSendsCurrentState() {
-    ViewModel<String> viewModel = new ViewModel<>("demo", "start");
-    List<PropertyChangeEvent> events = new ArrayList<>();
-    viewModel.addPropertyChangeListener(events::add);
-
-    viewModel.setState("next");
+  void firePropertyChangeSendsTheViewModel() {
+    viewModel.setActiveView("next");
     viewModel.firePropertyChange();
 
     assertEquals(1, events.size());
-    assertEquals("state", events.get(0).getPropertyName());
-    assertEquals("next", events.get(0).getNewValue());
+    assertEquals(ViewModel.STATE_PROPERTY, events.get(0).getPropertyName());
+    assertSame(viewModel, events.get(0).getNewValue());
   }
 
   @Test
-  void firesEvenWhenStateIsUnchanged() {
-    ViewModel<String> viewModel = new ViewModel<>("demo", "same");
-    List<PropertyChangeEvent> events = new ArrayList<>();
-    viewModel.addPropertyChangeListener(events::add);
-
+  void firesEvenWhenNothingChanged() {
     viewModel.firePropertyChange();
     viewModel.firePropertyChange();
 
@@ -56,7 +53,14 @@ class ViewModelTest {
   }
 
   @Test
+  void customPropertyNameIsPassedThrough() {
+    viewModel.firePropertyChange("reset");
+
+    assertEquals("reset", events.get(0).getPropertyName());
+  }
+
+  @Test
   void viewManagerStartsWithNoActiveView() {
-    assertEquals("", new ViewManagerModel().getState());
+    assertEquals("", viewModel.getActiveView());
   }
 }

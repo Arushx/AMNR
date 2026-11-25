@@ -14,7 +14,6 @@ import interface_adapter.signup.SignupPresenter;
 import interface_adapter.signup.SignupViewModel;
 import interface_adapter.watchlist.WatchlistController;
 import interface_adapter.watchlist.WatchlistPresenter;
-import interface_adapter.watchlist.WatchlistState;
 import interface_adapter.watchlist.WatchlistViewModel;
 import java.nio.file.Path;
 import java.util.List;
@@ -47,32 +46,32 @@ class WatchlistFlowTest {
     signUp(users, "demo");
     signUp(users, "other");
     logIn(users, "demo");
-    final String username = loggedInViewModel.getState().getUsername();
+    final String username = loggedInViewModel.getUsername();
 
     WatchlistController watchlist = newWatchlistController();
     watchlist.add(username, "aapl");
     watchlist.add(username, "MSFT");
-    assertEquals(List.of("AAPL", "MSFT"), state().getSymbols());
-    assertEquals("Added MSFT", state().getMessage());
+    assertEquals(List.of("AAPL", "MSFT"), watchlistViewModel.getSymbols());
+    assertEquals("Added MSFT", watchlistViewModel.getMessage());
 
     watchlist.add(username, "AAPL");
-    assertEquals("AAPL is already in your watchlist", state().getError());
-    assertEquals(List.of("AAPL", "MSFT"), state().getSymbols());
+    assertEquals("AAPL is already in your watchlist", watchlistViewModel.getError());
+    assertEquals(List.of("AAPL", "MSFT"), watchlistViewModel.getSymbols());
 
     WatchlistController reopened = newWatchlistController();
     reopened.view(username);
-    assertEquals(List.of("AAPL", "MSFT"), state().getSymbols());
-    assertNull(state().getError());
+    assertEquals(List.of("AAPL", "MSFT"), watchlistViewModel.getSymbols());
+    assertNull(watchlistViewModel.getError());
 
     reopened.remove(username, "aapl");
-    assertEquals("Removed AAPL", state().getMessage());
+    assertEquals("Removed AAPL", watchlistViewModel.getMessage());
     reopened.view(username);
-    assertEquals(List.of("MSFT"), state().getSymbols());
+    assertEquals(List.of("MSFT"), watchlistViewModel.getSymbols());
 
     logIn(users, "other");
-    reopened.view(loggedInViewModel.getState().getUsername());
-    assertEquals("other", state().getUsername());
-    assertEquals(List.of(), state().getSymbols());
+    reopened.view(loggedInViewModel.getUsername());
+    assertEquals("other", watchlistViewModel.getUsername());
+    assertEquals(List.of(), watchlistViewModel.getSymbols());
   }
 
   private WatchlistController newWatchlistController() throws WatchlistStorageException {
@@ -95,10 +94,6 @@ class WatchlistFlowTest {
             new LoginInteractor(
                 users, new LoginPresenter(viewManagerModel, loginViewModel, loggedInViewModel)))
         .execute(username, "pw");
-    assertEquals(username, loggedInViewModel.getState().getUsername());
-  }
-
-  private WatchlistState state() {
-    return watchlistViewModel.getState();
+    assertEquals(username, loggedInViewModel.getUsername());
   }
 }

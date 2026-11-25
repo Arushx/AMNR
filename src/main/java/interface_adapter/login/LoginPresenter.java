@@ -1,7 +1,6 @@
 package interface_adapter.login;
 
 import interface_adapter.ViewManagerModel;
-import interface_adapter.logged_in.LoggedInState;
 import interface_adapter.logged_in.LoggedInViewModel;
 import use_case.login.LoginOutputBoundary;
 import use_case.login.LoginOutputData;
@@ -21,8 +20,8 @@ public class LoginPresenter implements LoginOutputBoundary {
    * Creates the presenter.
    *
    * @param viewManagerModel switches the active view
-   * @param loginViewModel the login view's state
-   * @param loggedInViewModel the logged-in view's state
+   * @param loginViewModel what the login view shows
+   * @param loggedInViewModel what the logged-in view shows
    */
   public LoginPresenter(
       ViewManagerModel viewManagerModel,
@@ -35,19 +34,21 @@ public class LoginPresenter implements LoginOutputBoundary {
 
   @Override
   public void prepareSuccessView(LoginOutputData outputData) {
-    loggedInViewModel.setState(new LoggedInState(outputData.getUsername()));
+    loggedInViewModel.setUsername(outputData.getUsername());
     loggedInViewModel.firePropertyChange();
 
-    loginViewModel.setState(new LoginState());
+    loginViewModel.setUsername("");
+    loginViewModel.setPassword("");
+    loginViewModel.setError(null);
     loginViewModel.firePropertyChange();
 
-    viewManagerModel.setState(loggedInViewModel.getViewName());
+    viewManagerModel.setActiveView(loggedInViewModel.getViewName());
     viewManagerModel.firePropertyChange();
   }
 
   @Override
   public void prepareFailView(String errorMessage) {
-    loginViewModel.setState(loginViewModel.getState().withError(errorMessage));
+    loginViewModel.setError(errorMessage);
     loginViewModel.firePropertyChange();
   }
 }

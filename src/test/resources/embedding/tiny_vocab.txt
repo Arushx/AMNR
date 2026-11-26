@@ -1,0 +1,15 @@
+[PAD]
+[UNK]
+[CLS]
+[SEP]
+oil
+stocks
+best
+selling
+petro
+##chemical
+##s
+,
+&
+cafe
+$

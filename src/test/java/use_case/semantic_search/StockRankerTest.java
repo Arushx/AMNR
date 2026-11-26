@@ -155,4 +155,37 @@ class StockRankerTest {
 
     assertEquals(List.of("TINY", "XOM", "COP"), symbols(fixed.rank("anything", 3)));
   }
+
+  @Test
+  void sizeBoostStepsDownFromMegaToMicro() {
+    assertEquals(0.08, StockRanker.sizeBoost(MarketCapClass.MEGA), 1e-9);
+    assertEquals(0.06, StockRanker.sizeBoost(MarketCapClass.LARGE), 1e-9);
+    assertEquals(0.04, StockRanker.sizeBoost(MarketCapClass.MID), 1e-9);
+    assertEquals(0.02, StockRanker.sizeBoost(MarketCapClass.SMALL), 1e-9);
+    assertEquals(0.0, StockRanker.sizeBoost(MarketCapClass.MICRO), 1e-9);
+    assertEquals(0.0, StockRanker.sizeBoost(MarketCapClass.NANO), 1e-9);
+    assertEquals(0.0, StockRanker.sizeBoost(MarketCapClass.UNKNOWN), 1e-9);
+  }
+
+  @Test
+  void bigCompanyWinsACloseCallInRelevanceOrder() throws StockDataUnavailableException {
+    // TINY (Nano) matches a bit better than BAC (Mega), but within the boost, so BAC goes first.
+    StockRanker fixed =
+        new StockRanker(profiles, new FixedScores(0, 0.55, 0, 0, 0, 0.50),
+            new KeywordProfileMatcher());
+
+    Ranking ranking = fixed.rank("anything", 10);
+
+    assertEquals(List.of("BAC", "TINY"), symbols(ranking));
+    assertEquals(0.58, ranking.getStocks().get(0).getScore(), 1e-9);
+  }
+
+  @Test
+  void sizeBoostNeverTurnsANonMatchIntoAMatch() throws StockDataUnavailableException {
+    StockRanker fixed =
+        new StockRanker(profiles, new FixedScores(0, 0.5, 0, 0, 0, 0),
+            new KeywordProfileMatcher());
+
+    assertEquals(List.of("TINY"), symbols(fixed.rank("anything", 10)));
+  }
 }

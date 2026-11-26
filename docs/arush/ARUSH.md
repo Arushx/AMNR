@@ -720,3 +720,39 @@ So the category is a strong signal.
 - pharmaceutical companies → **AZN ABBV LLY**…
 
 **Learned:** the constant's comment records *why* 0.08 (the benchmark numbers), so a teammate won't change it at random.
+
+---
+
+## 38. Does the AI model run on every computer? (2026-11-26)
+
+**Question:** "wait, it doesn't run on every PC?"
+
+**Why:** ONNX Runtime isn't pure Java. Inside its jar is a compiled C++ library for each operating system and processor, and Java loads the one matching the computer.
+
+**What I found, by listing what's inside each version's jar:**
+
+| Version | Windows (Intel/AMD) | Mac (Apple Silicon) | Mac (Intel) | Linux |
+|---|---|---|---|---|
+| 1.31.1 (what we had) | yes | yes | **no** | yes |
+| 1.24 and newer | yes | varies | **no** | yes |
+| **1.23.2** (now) | yes | yes | **yes** | yes |
+
+Still unsupported: Windows on ARM laptops (rare). Those get the keyword fallback.
+
+**A real bug the simulation found:** I faked an unsupported computer by starting Java with `-Dos.arch=x86_64`.
+- The first search fell back to keywords correctly.
+- The second search **crashed**: Java throws `UnsatisfiedLinkError` the first time a native library fails, then `NoClassDefFoundError` every time after, and we only caught the first.
+
+**Fix (`OnnxTextEmbedder`):**
+- Catch `LinkageError` (the parent of both) and remember the failure in a field.
+- Every later search immediately reports "the AI search model isn't supported on this computer", so the ranker uses keyword matching.
+
+**Tested:**
+- normal Apple Silicon: full AI results;
+- simulated Intel and Windows ARM: keyword results on every search, no crash;
+- 241 tests pass.
+
+**Learned:**
+- "Pure Java" libraries run anywhere; libraries with native code only run where they ship a build. Always check the supported platforms before adding one.
+- Simulating a failure (`-Dos.arch`) can find bugs that tests on your own computer never will.
+- Catching an exception once isn't enough if the next call throws a *different* one.

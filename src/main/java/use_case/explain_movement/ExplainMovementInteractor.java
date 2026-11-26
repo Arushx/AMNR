@@ -25,8 +25,8 @@ import use_case.StockDataUnavailableException;
  *   <li>Write the summary ({@link MoveSummarizer}).
  * </ol>
  *
- * <p>If the prices can't be loaded, the fail view is shown. If only the news can't be loaded, the
- * success view still gets the price move, with an empty summary and the news error.
+ * <p>If the prices can't be loaded, the fail view is shown. If only the news can't be loaded or
+ * labeled, the success view still gets the price move, with an empty summary and the news error.
  */
 public class ExplainMovementInteractor implements ExplainMovementInputBoundary {
 
@@ -115,8 +115,15 @@ public class ExplainMovementInteractor implements ExplainMovementInputBoundary {
       return;
     }
 
-    final List<LabeledArticle> relevant =
-        label(selector.filterRelevant(news, movement.getSymbol(), companyName));
+    final List<LabeledArticle> relevant;
+    try {
+      relevant = label(selector.filterRelevant(news, movement.getSymbol(), companyName));
+    } catch (SentimentUnavailableException e) {
+      presenter.prepareSuccessView(
+          output(movement, companyName, "", List.of(),
+              "Could not analyse the news: " + e.getMessage()));
+      return;
+    }
     final NewsEvidence evidence = selector.select(relevant, movement, companyName);
     final MovementSummary summary;
     try {
@@ -129,7 +136,8 @@ public class ExplainMovementInteractor implements ExplainMovementInputBoundary {
         output(movement, companyName, summary.getText(), summary.getSources(), ""));
   }
 
-  private List<LabeledArticle> label(List<NewsArticle> articles) {
+  private List<LabeledArticle> label(List<NewsArticle> articles)
+      throws SentimentUnavailableException {
     final List<Sentiment> labels = classifier.classify(articles);
     if (labels.size() != articles.size()) {
       throw new IllegalStateException("classifier must return one label per article");

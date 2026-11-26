@@ -93,6 +93,38 @@ The latest price of a stock and how much it moved since the previous close.
 **Limits:** the free key allows 25 requests per day and 1 request per second. The client spaces requests at least 1.1 seconds apart, and tests use saved responses instead of the live API.
 
 **Setup:** set your key in the environment variable `ALPHA_VANTAGE_API_KEY` (for example in IntelliJ: *Run* → *Edit Configurations* → *Environment variables*). Never commit a key.
+
+**API Name:** Finnhub (company news, for Use Case 5)
+
+**Documentation:** https://finnhub.io/docs/api/company-news
+
+**How it is used in the program:**
+- `company-news`: news articles about one company in a date range (headline, summary, source, link, publish time, related tickers). Used to explain why a stock rose or fell.
+
+**Called successfully?** Not yet with a real key. The parser is tested against a made-up response in Finnhub's documented format (`src/test/resources/finnhub/`).
+
+**Limits:** the free tier gives 1 year of news history and about 60 requests per minute. One request returns a limited number of articles, so long date ranges are fetched 30 days at a time.
+
+**Setup:**
+1. Sign up for a free account at https://finnhub.io/register. Your API key is shown on the dashboard.
+2. Put it in the environment variable `FINNHUB_API_KEY`, the same way as the Alpha Vantage key. For example, in IntelliJ go to *Run* → *Edit Configurations* → *Environment variables* and add `FINNHUB_API_KEY=your_key`. Do this for the `Main` configuration and for any test configuration where you want the live test to run.
+3. Optional check: `mvn test` runs `FinnhubClientTest.fetchesRealCompanyNews` (1 request) when the variable is set.
+
+The key is sent in the `X-Finnhub-Token` header, not in the URL. Never commit it.
+
+**Sentiment word list (Use Case 5, no API):** `src/main/resources/sentiment/Loughran-McDonald_MasterDictionary_1993-2025.csv` is the Loughran-McDonald Master Dictionary from the [Notre Dame Software Repository for Accounting and Finance](https://sraf.nd.edu/loughranmcdonald-master-dictionary/). It is free for academic use; see their page for the terms. A word counts as positive or negative when its `Positive` or `Negative` column holds a positive year (the year it was added); a negative year such as `-2020` means it was removed, and those words are ignored.
+
+**Sentiment model (Use Case 5, optional, no API key):** [FinBERT](https://huggingface.co/ProsusAI/finbert) by ProsusAI (Araci, 2019, arXiv:1908.10063), a BERT model trained on financial news, labels each article positive, negative or neutral. It catches headline words the dictionary misses ("plunge", "surge", "lawsuit").
+- **Files:** from the ONNX copy at [Xenova/finbert](https://huggingface.co/Xenova/finbert), pinned to commit `8f269ab`. `vocab.txt` and `config.json` are small and bundled in `src/main/resources/finbert/`. The model, `onnx/model_quantized.onnx` (111 MB), is too big for GitHub (100 MB limit), so it is downloaded instead.
+- **First run:** the model is downloaded once to `~/.amnr/models/finbert-8f269ab/` (on Windows, `C:\Users\<you>\.amnr\...`) and checked against a fixed SHA-256 checksum. If the download fails (e.g. no internet), the app uses the dictionary instead.
+- **Speed (measured on a cloud CPU):** about 1 s to load the model, then about 0.8 s for 64 articles.
+- **Runs locally** with Microsoft's ONNX Runtime (`com.microsoft.onnxruntime:onnxruntime`, which includes Windows, macOS and Linux support). There is no Hugging Face account or key.
+- **License:** FinBERT is CC BY-NC-SA 4.0, so non-commercial use only, with credit to ProsusAI.
+- **Testing with the real model:** tests never download anything unless you ask them to. Either:
+  - put `FINBERT_DOWNLOAD=true` in your `.env`: `LocalFinbertSentimentClassifierTest.matchesPythonOnRealHeadlines` downloads the model the same way the app will, then checks the Java results against Python's. After the first run it reuses the file. It saves to `FINBERT_MODEL_DIR` if you set it (e.g. `FINBERT_MODEL_DIR=D:/models/finbert`, with forward slashes), otherwise to `~/.amnr/models/finbert-8f269ab/`; or
+  - download `onnx/model_quantized.onnx` yourself into a folder (keep the name `model_quantized.onnx`) and set `FINBERT_MODEL_DIR` to that folder; the same test then runs without downloading.
+
+  See `src/test/resources/finbert/README.md` for where the expected answers come from.
 ---
 ## Design Diagrams
 ### UML Class Diagram

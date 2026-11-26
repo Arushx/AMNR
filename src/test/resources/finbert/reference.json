@@ -1,0 +1,646 @@
+{
+ "tokenizer_cases": [
+  {
+   "text": "Ünïcödé naïve résumé — “quoted” text…",
+   "ids": [
+    101,
+    27260,
+    15743,
+    13746,
+    1517,
+    1523,
+    9339,
+    1524,
+    3793,
+    1529,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "unicode",
+    "naive",
+    "resume",
+    "—",
+    "“",
+    "quoted",
+    "”",
+    "text",
+    "…",
+    "[SEP]"
+   ]
+  },
+  {
+   "text": "腾讯 shares rise 3%",
+   "ids": [
+    101,
+    100,
+    100,
+    6661,
+    4125,
+    1017,
+    1003,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "[UNK]",
+    "[UNK]",
+    "shares",
+    "rise",
+    "3",
+    "%",
+    "[SEP]"
+   ]
+  },
+  {
+   "text": "Emoji 🚀 to the moon!!",
+   "ids": [
+    101,
+    7861,
+    29147,
+    2072,
+    100,
+    2000,
+    1996,
+    4231,
+    999,
+    999,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "em",
+    "##oj",
+    "##i",
+    "[UNK]",
+    "to",
+    "the",
+    "moon",
+    "!",
+    "!",
+    "[SEP]"
+   ]
+  },
+  {
+   "text": "tabs\tand\nnew lines\r\nhere",
+   "ids": [
+    101,
+    21628,
+    2015,
+    1998,
+    2047,
+    3210,
+    2182,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "tab",
+    "##s",
+    "and",
+    "new",
+    "lines",
+    "here",
+    "[SEP]"
+   ]
+  },
+  {
+   "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "ids": [
+    101,
+    100,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "[UNK]",
+    "[SEP]"
+   ]
+  },
+  {
+   "text": "U.S. Fed's rate-hike fears; S&P 500 slips 1.2%",
+   "ids": [
+    101,
+    1057,
+    1012,
+    1055,
+    1012,
+    7349,
+    1005,
+    1055,
+    3446,
+    1011,
+    21857,
+    10069,
+    1025,
+    1055,
+    1004,
+    1052,
+    3156,
+    17433,
+    1015,
+    1012,
+    1016,
+    1003,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "u",
+    ".",
+    "s",
+    ".",
+    "fed",
+    "'",
+    "s",
+    "rate",
+    "-",
+    "hike",
+    "fears",
+    ";",
+    "s",
+    "&",
+    "p",
+    "500",
+    "slips",
+    "1",
+    ".",
+    "2",
+    "%",
+    "[SEP]"
+   ]
+  },
+  {
+   "text": "   ",
+   "ids": [
+    101,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "[SEP]"
+   ]
+  },
+  {
+   "text": "Ｆｕｌｌ-width ＡＢＣ",
+   "ids": [
+    101,
+    100,
+    1011,
+    9381,
+    100,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "[UNK]",
+    "-",
+    "width",
+    "[UNK]",
+    "[SEP]"
+   ]
+  },
+  {
+   "text": "e-commerce co-founder's $1.5B deal (NASDAQ: ACME)",
+   "ids": [
+    101,
+    1041,
+    1011,
+    6236,
+    2522,
+    1011,
+    3910,
+    1005,
+    1055,
+    1002,
+    1015,
+    1012,
+    1019,
+    2497,
+    3066,
+    1006,
+    17235,
+    2850,
+    4160,
+    1024,
+    9353,
+    4168,
+    1007,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "e",
+    "-",
+    "commerce",
+    "co",
+    "-",
+    "founder",
+    "'",
+    "s",
+    "$",
+    "1",
+    ".",
+    "5",
+    "##b",
+    "deal",
+    "(",
+    "nas",
+    "##da",
+    "##q",
+    ":",
+    "ac",
+    "##me",
+    ")",
+    "[SEP]"
+   ]
+  },
+  {
+   "text": "​zero​width and soft­hyphen",
+   "ids": [
+    101,
+    5717,
+    9148,
+    11927,
+    2232,
+    1998,
+    3730,
+    10536,
+    8458,
+    2368,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "zero",
+    "##wi",
+    "##dt",
+    "##h",
+    "and",
+    "soft",
+    "##hy",
+    "##ph",
+    "##en",
+    "[SEP]"
+   ]
+  }
+ ],
+ "model_cases": [
+  {
+   "text": "ACME shares plunge after regulators open probe",
+   "ids": [
+    101,
+    9353,
+    4168,
+    6661,
+    25912,
+    2044,
+    25644,
+    2330,
+    15113,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "ac",
+    "##me",
+    "shares",
+    "plunge",
+    "after",
+    "regulators",
+    "open",
+    "probe",
+    "[SEP]"
+   ],
+   "logits": [
+    -1.7026028633117676,
+    2.575068473815918,
+    -0.14707134664058685
+   ],
+   "label": "negative"
+  },
+  {
+   "text": "ACME shares surge after record quarterly earnings",
+   "ids": [
+    101,
+    9353,
+    4168,
+    6661,
+    12058,
+    2044,
+    2501,
+    12174,
+    16565,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "ac",
+    "##me",
+    "shares",
+    "surge",
+    "after",
+    "record",
+    "quarterly",
+    "earnings",
+    "[SEP]"
+   ],
+   "logits": [
+    0.9909871816635132,
+    -0.4224553406238556,
+    -0.6568166017532349
+   ],
+   "label": "positive"
+  },
+  {
+   "text": "ACME to hold annual shareholder meeting on Tuesday",
+   "ids": [
+    101,
+    9353,
+    4168,
+    2000,
+    2907,
+    3296,
+    18668,
+    3116,
+    2006,
+    9857,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "ac",
+    "##me",
+    "to",
+    "hold",
+    "annual",
+    "shareholder",
+    "meeting",
+    "on",
+    "tuesday",
+    "[SEP]"
+   ],
+   "logits": [
+    -0.5461559295654297,
+    -1.0806819200515747,
+    2.28155517578125
+   ],
+   "label": "neutral"
+  },
+  {
+   "text": "ACME faces lawsuit over contract dispute",
+   "ids": [
+    101,
+    9353,
+    4168,
+    5344,
+    9870,
+    2058,
+    3206,
+    7593,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "ac",
+    "##me",
+    "faces",
+    "lawsuit",
+    "over",
+    "contract",
+    "dispute",
+    "[SEP]"
+   ],
+   "logits": [
+    -0.9604038596153259,
+    1.6160962581634521,
+    0.03562562167644501
+   ],
+   "label": "negative"
+  },
+  {
+   "text": "Nvidia's revenue didn't meet analysts' expectations.",
+   "ids": [
+    101,
+    1050,
+    17258,
+    2401,
+    1005,
+    1055,
+    6599,
+    2134,
+    1005,
+    1056,
+    3113,
+    18288,
+    1005,
+    10908,
+    1012,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "n",
+    "##vid",
+    "##ia",
+    "'",
+    "s",
+    "revenue",
+    "didn",
+    "'",
+    "t",
+    "meet",
+    "analysts",
+    "'",
+    "expectations",
+    ".",
+    "[SEP]"
+   ],
+   "logits": [
+    -0.9587787389755249,
+    1.737420678138733,
+    -0.7350477576255798
+   ],
+   "label": "negative"
+  },
+  {
+   "text": "Café owner sells stake in ACME — shares jump 5%!",
+   "ids": [
+    101,
+    7668,
+    3954,
+    15187,
+    8406,
+    1999,
+    9353,
+    4168,
+    1517,
+    6661,
+    5376,
+    1019,
+    1003,
+    999,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "cafe",
+    "owner",
+    "sells",
+    "stake",
+    "in",
+    "ac",
+    "##me",
+    "—",
+    "shares",
+    "jump",
+    "5",
+    "%",
+    "!",
+    "[SEP]"
+   ],
+   "logits": [
+    0.5946679711341858,
+    -0.9585180282592773,
+    0.3879551291465759
+   ],
+   "label": "positive"
+  },
+  {
+   "text": "Stocks rally as inflation cools; tech leads gains",
+   "ids": [
+    101,
+    15768,
+    8320,
+    2004,
+    14200,
+    4658,
+    2015,
+    1025,
+    6627,
+    5260,
+    12154,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "stocks",
+    "rally",
+    "as",
+    "inflation",
+    "cool",
+    "##s",
+    ";",
+    "tech",
+    "leads",
+    "gains",
+    "[SEP]"
+   ],
+   "logits": [
+    0.5110301375389099,
+    -1.0905340909957886,
+    1.0452544689178467
+   ],
+   "label": "neutral"
+  },
+  {
+   "text": "",
+   "ids": [
+    101,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "[SEP]"
+   ],
+   "logits": [
+    0.38444212079048157,
+    -0.14432601630687714,
+    -0.04302601143717766
+   ],
+   "label": "positive"
+  },
+  {
+   "text": "ACME announces layoffs of 1,200 employees amid weak demand",
+   "ids": [
+    101,
+    9353,
+    4168,
+    17472,
+    3913,
+    27475,
+    1997,
+    1015,
+    1010,
+    3263,
+    5126,
+    13463,
+    5410,
+    5157,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "ac",
+    "##me",
+    "announces",
+    "lay",
+    "##offs",
+    "of",
+    "1",
+    ",",
+    "200",
+    "employees",
+    "amid",
+    "weak",
+    "demand",
+    "[SEP]"
+   ],
+   "logits": [
+    -1.629529595375061,
+    2.745159864425659,
+    -0.7094057202339172
+   ],
+   "label": "negative"
+  },
+  {
+   "text": "Analysts upgrade ACME to buy, citing strong cloud growth",
+   "ids": [
+    101,
+    18288,
+    12200,
+    9353,
+    4168,
+    2000,
+    4965,
+    1010,
+    8951,
+    2844,
+    6112,
+    3930,
+    102
+   ],
+   "tokens": [
+    "[CLS]",
+    "analysts",
+    "upgrade",
+    "ac",
+    "##me",
+    "to",
+    "buy",
+    ",",
+    "citing",
+    "strong",
+    "cloud",
+    "growth",
+    "[SEP]"
+   ],
+   "logits": [
+    1.638811707496643,
+    -1.5279346704483032,
+    -0.8022485971450806
+   ],
+   "label": "positive"
+  }
+ ]
+}

@@ -11,24 +11,30 @@ import java.util.Set;
  * selling" would match a company literally named "Best". So ranking phrases are taken out and
  * turned into a {@link SortOrder}, and filler words ("stocks", "companies") are dropped, leaving
  * only the topic to embed.
+ *
+ * <p>"Expensive" and "cheap" are read as company size (market cap), because share prices would
+ * cost one API request per stock; a company's total value is a fair stand-in.
  */
 public class SearchQueryParser {
 
   /** Longer phrases come first so "best selling" is removed before "best". */
   private static final List<String> LARGEST_PHRASES =
       List.of(
-          "best selling", "best-selling", "most valuable", "blue chip", "blue-chip", "biggest",
-          "largest", "leading", "major", "giant", "top", "best");
+          "best selling", "best-selling", "most valuable", "most expensive", "most popular",
+          "blue chip", "blue-chip", "biggest", "largest", "leading", "major", "giant", "priciest",
+          "expensive", "popular", "top", "best");
 
   private static final List<String> SMALLEST_PHRASES =
-      List.of("small cap", "small-cap", "micro cap", "micro-cap", "smallest", "penny", "tiny");
+      List.of(
+          "small cap", "small-cap", "micro cap", "micro-cap", "smallest", "cheapest", "penny",
+          "cheap", "tiny");
 
   private static final Set<String> FILLER_WORDS =
       Set.of(
           "stock", "stocks", "share", "shares", "company", "companies", "firm", "firms",
           "business", "businesses", "corporation", "corporations", "equities", "the", "a", "an",
           "of", "in", "that", "which", "who", "me", "show", "find", "list", "some", "any", "good",
-          "for", "to", "and", "make", "makes", "making", "maker", "makers");
+          "for", "to", "and", "most", "make", "makes", "making", "maker", "makers");
 
   /**
    * Parses a search sentence.

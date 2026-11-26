@@ -29,8 +29,8 @@ class SemanticProfileMatcherTest {
     matcher.score("oil", profiles);
     matcher.score("bank", profiles);
 
-    // 3 profiles + 2 queries; the second search reuses the profile vectors in memory.
-    assertEquals(5, embedder.embedded.size());
+    // 3 profiles + 6 sector/industry names + 2 queries; the second search reuses the vectors.
+    assertEquals(11, embedder.embedded.size());
     assertEquals(1, store.saves);
   }
 
@@ -53,7 +53,18 @@ class SemanticProfileMatcherTest {
 
     new SemanticProfileMatcher(embedder, store).score("oil", profiles);
 
-    assertEquals(4, embedder.embedded.size());
+    // Everything is embedded again: 3 profiles + 6 sector/industry names + the query.
+    assertEquals(10, embedder.embedded.size());
+  }
+
+  @Test
+  void categoryMatchLiftsProfilesWhoseTextBarelyMentionsTheTopic()
+      throws EmbeddingUnavailableException {
+    // The bank's industry is "Banks"; its own text mentions banking once, Exxon's not at all.
+    double[] scores = new SemanticProfileMatcher(embedder, store).score("bank", profiles);
+
+    assertEquals(1.0, scores[2], 1e-6);
+    assertEquals(0.0, scores[0], 1e-6);
   }
 
   @Test

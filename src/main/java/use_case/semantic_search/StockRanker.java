@@ -17,14 +17,25 @@ import use_case.StockProfileDataAccessInterface;
  * <ol>
  *   <li>Split the sentence into a topic and a sort order ({@link SearchQueryParser}).
  *   <li>Score every profile against the topic: by meaning if possible, otherwise by keywords.
- *   <li>Keep the {@value #CANDIDATE_POOL} best matches.
- *   <li>Order them by relevance or by company size, and return the first few.
+ *   <li>Order the matches by relevance, or (for "biggest ..." or "small cap ...") take every
+ *       match that is nearly as good as the best one and order those by company size.
+ *   <li>Return the first few.
  * </ol>
  */
 public class StockRanker implements RelatedStockFinder {
 
-  /** How many of the closest matches are re-ordered by size ("biggest oil stocks"). */
-  static final int CANDIDATE_POOL = 30;
+  /**
+   * For a size order, matches scoring within this much of the best match are re-ordered by size.
+   * A broad topic ("tech") has many near-equal matches, so its pool is big and includes the giant
+   * companies; a narrow one ("oil") has a smaller pool, so size can't pull in unrelated stocks.
+   */
+  static final double SIZE_SORT_SCORE_GAP = 0.12;
+
+  /** The size-sorted pool always has at least this many matches (if there are that many). */
+  static final int MIN_SIZE_SORT_POOL = 30;
+
+  /** ... and at most this many. */
+  static final int MAX_SIZE_SORT_POOL = 300;
 
   private final StockProfileDataAccessInterface profileDataAccess;
   private final ProfileMatcher primaryMatcher;
@@ -79,13 +90,29 @@ public class StockRanker implements RelatedStockFinder {
       }
     }
     matches.sort(Comparator.comparingDouble(RankedStock::getScore).reversed());
-    final List<RankedStock> pool =
-        new ArrayList<>(matches.subList(0, Math.min(CANDIDATE_POOL, matches.size())));
+    List<RankedStock> ordered = matches;
     if (parsed.getSortOrder() != SortOrder.RELEVANCE) {
+      ordered = new ArrayList<>(matches.subList(0, sizeSortPool(matches)));
       // List.sort is stable: stocks of the same size keep their relevance order.
-      pool.sort(bySize(parsed.getSortOrder()));
+      ordered.sort(bySize(parsed.getSortOrder()));
     }
-    return new Ranking(parsed, pool.subList(0, Math.min(limit, pool.size())), fallbackReason);
+    return new Ranking(
+        parsed, new ArrayList<>(ordered.subList(0, Math.min(limit, ordered.size()))),
+        fallbackReason);
+  }
+
+  /** How many of the best matches (sorted best first) to re-order by size. */
+  private static int sizeSortPool(List<RankedStock> matches) {
+    if (matches.isEmpty()) {
+      return 0;
+    }
+    final double cutoff = matches.get(0).getScore() - SIZE_SORT_SCORE_GAP;
+    int pool = 0;
+    while (pool < matches.size() && matches.get(pool).getScore() >= cutoff) {
+      pool++;
+    }
+    pool = Math.max(MIN_SIZE_SORT_POOL, Math.min(MAX_SIZE_SORT_POOL, pool));
+    return Math.min(pool, matches.size());
   }
 
   @Override

@@ -545,3 +545,35 @@ Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → prese
 - **SRP:** the CSV splitting is its own class, so the DAO only maps fields to an entity.
 - **Classpath resource vs file:** `getResourceAsStream("/stock_profiles.csv")` finds the file inside the app (from `src/main/resources`), unlike `data/listing_status.csv`, which is a local file.
 - **Fail loudly with the line number:** a broken data file gives "malformed at line N", not a confusing crash later.
+
+---
+
+## 33. Local embedding model (2026-11-26)
+
+**Decided:** run the model inside Java instead of calling Gemini. No key, no limits, works offline. Alpha Vantage already covers the "uses an API" requirement.
+
+**Added:**
+- `use_case/semantic_search/TextEmbeddingGateway`: `float[] embed(String)` and `modelName()`, plus `EmbeddingUnavailableException`.
+- `data_access/WordPieceTokenizer`: pure Java, turns text into the model's token ids.
+  - lowercase, strip accents, split off punctuation;
+  - split words into vocabulary pieces ("petrochemicals" → `petro ##chemical ##s`);
+  - wrap in `[CLS] … [SEP]`.
+- `data_access/MiniLmModelFiles`: downloads the 23 MB quantized model and `vocab.txt` once.
+  - Comes from a fixed Hugging Face commit, into `data/models/` (git-ignored).
+  - Checks each file's SHA-256 fingerprint before using it.
+- `data_access/OnnxTextEmbedder`: tokenize → run the model (384 numbers per token) → average them ("mean pooling") → scale to length 1.
+- `pom.xml`: ONNX Runtime 1.31.1 (Microsoft; runs the model).
+- Cleaned the dataset: removed preferred shares, warrants, units, rights and notes (they cluttered results). 6,063 stocks now.
+- 14 new tests (192 total, all passing). The real-model test only runs if the model is downloaded.
+
+**Results from the real model:**
+- All 6,063 profiles embed in about 16 seconds.
+- "oil stocks" → DHT, CRK, GPOR, XOM… (oil producers and tankers).
+- "banks" → banks.
+- "computer chips" → INTC, TSM, UMC…
+
+**Learned:**
+- **Embedding = meaning as numbers.** Similar texts point the same way; the dot product of length-1 vectors is the cosine similarity.
+- **"best selling" can't be handled by embeddings.** It matched a SPAC literally named "BEST". The interactor will strip ranking words and sort by `MarketCapClass` instead.
+- **Limitation:** ONNX Runtime has no build for Intel Macs, only Apple Silicon, Windows x64 and Linux. Intel Mac teammates will need the keyword fallback.
+- **SHA-256 check:** never run a downloaded file without checking it's the exact one we expect.

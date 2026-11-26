@@ -526,3 +526,22 @@ Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → prese
 - **Why entity layer:** a company profile is a core business idea. It imports nothing else and doesn't know about CSV files or Gemini.
 - **Same style as `StockListing`:** immutable (`final` fields, no setters), the symbol trimmed and uppercased, blank symbol rejected, missing text becomes "".
 - **Not added on purpose:** the "text to embed" format. That's a use-case decision, so it goes in the interactor's layer.
+
+---
+
+## 32. Profile loader (2026-11-26)
+
+**Added:**
+- `use_case/StockProfileDataAccessInterface`: `List<StockProfile> getProfiles()`, which throws `StockDataUnavailableException`.
+- `data_access/CsvLineParser`: splits one CSV line properly.
+  - Commas inside `"..."` stay in the field ("Oil, Gas & Fuels").
+  - A doubled `""` inside quotes means one `"`.
+  - An unclosed quote throws an error.
+- `data_access/ResourceStockProfileDataAccessObject`: reads `stock_profiles.csv` from the classpath, checks the header, builds a `StockProfile` per line, and keeps the list in memory.
+- A test fixture `profiles/stock_profiles_sample.csv` (4 tricky rows) and 12 new tests. One test loads the real file (more than 6,000 profiles, XOM present). 178 tests in total, all passing.
+
+**Learned:**
+- **DIP again:** the interface sits in `use_case`, and the DAO in `data_access` implements it from below. The interactor will never know the data comes from a CSV.
+- **SRP:** the CSV splitting is its own class, so the DAO only maps fields to an entity.
+- **Classpath resource vs file:** `getResourceAsStream("/stock_profiles.csv")` finds the file inside the app (from `src/main/resources`), unlike `data/listing_status.csv`, which is a local file.
+- **Fail loudly with the line number:** a broken data file gives "malformed at line N", not a confusing crash later.

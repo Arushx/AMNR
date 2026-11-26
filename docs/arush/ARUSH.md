@@ -464,3 +464,30 @@ Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → prese
 - My terminal's `JAVA_HOME` points to Java 8, so `mvn` from the terminal fails; the project needs Java 11+.
 
 **Course rule to remember:** each lead builds the UI for **their own** use case. I shouldn't write teammates' views; I can build mine and a shared navigation shell everyone plugs into (agreed with the team first).
+
+---
+
+## 29. Use Case 7 plan: semantic search ("best selling oil stocks")
+
+**Talked about:** how to find stocks from a sentence, not just a ticker or name.
+
+**Learned:**
+- **Embedding:** a model turns text into a list of numbers (a vector). Texts with similar meaning get vectors pointing the same way, so "oil" lands near "crude", "petroleum" and "energy".
+- **Cosine similarity:** how close two vectors point; 1 means the same meaning, 0 means unrelated.
+- **Asymmetric search:** a short query against longer stock descriptions. We embed every description once and save it; at search time we embed only the query.
+- **A name alone isn't enough.** "Exxon Mobil Corp" says nothing about oil. Each stock needs a profile text: sector, industry and a short description.
+- **The sentence has two parts:**
+  - the *topic* ("oil"), handled by the embedding;
+  - the *ranking intent* ("best selling", "cheapest", "most traded"), handled by a rule-based parser that maps it to an entity field to sort by.
+- **The request budget matters.** A quote costs 1 of our 25 daily requests, so we only fetch live prices for the top 5 results.
+
+**Plan (CA):**
+
+| Layer | Pieces |
+|---|---|
+| `entity` | `StockProfile` (symbol, name, sector, industry, description), cosine-similarity maths |
+| `use_case/semantic_search` | Input/Output data and boundaries, interactor, `TextEmbeddingGateway` interface (DIP: the interactor doesn't know which model), profile data-access interface, query-intent parser |
+| `data_access` | the embedding model (Java, on our CPU, or an API), a file DAO for profiles plus saved vectors |
+| UI | result list; picking one calls Use Case 1's search |
+
+**Still to decide:** where the embeddings come from (a local Java model vs a hosted API) and where the stock profiles come from.

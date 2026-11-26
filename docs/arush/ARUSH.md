@@ -664,3 +664,37 @@ So the category is a strong signal.
 **Learned:**
 - Judge search quality by running real queries, then change one thing at a time and compare.
 - The Java `WARNING: restricted method` lines come from running on a Java newer than 11. They're harmless; the VM option `--enable-native-access=ALL-UNNAMED` hides them.
+
+---
+
+## 36. Model comparison: MiniLM vs mpnet (2026-11-26)
+
+**Question:** would `all-mpnet-base-v2` (the bigger model) understand searches better?
+
+**Test:**
+- 18 searches (oil, banks, airlines, chips, EVs, games, gold mining, streaming, social media, cloud software, fast food, pharma, payments, travel, home improvement, cybersecurity, railroads, "makers of iphones").
+- Each search has a list of companies a person would expect (e.g. airlines → AAL DAL UAL LUV…).
+- Same ranking code for both models; I counted the expected companies in the top 10.
+
+| Model | Download | Build index | Expected in top 10 | Right #1 |
+|---|---|---|---|---|
+| MiniLM (ours) | 23 MB | 15 s | 41 | 8/18 |
+| mpnet | 110 MB | 67 s | 40 | 6/18 |
+
+**Result: a tie.** mpnet isn't better here and is 5× bigger and slower, so we keep MiniLM.
+
+**The real problem I found:** both models return real but little-known companies (GBC and NARA are genuine banks) ahead of the famous ones people expect. A small score boost for bigger companies fixes most of that:
+
+| Size boost (Mega gets the full boost, smaller classes less) | Expected in top 10 | Right #1 |
+|---|---|---|
+| none | 41 | 8/18 |
+| 0.06 | 59 | 15/18 |
+| **0.08** | **66** | **16/18** |
+| 0.14 | 71 | 17/18, but unrelated giants creep in ("makers of iphones" → LLY, ABBV) |
+
+**0.08 looks like the sweet spot** (not built yet).
+
+**Learned:**
+- **Measure, don't guess:** a fixed test set with expected answers turns "it feels dumb" into numbers.
+- A bigger model isn't automatically better; how we *rank* matters more than which model embeds.
+- **Watch for overfitting:** our expected lists are famous companies, so a too-big size boost scores well on paper while giving silly results.

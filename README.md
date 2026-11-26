@@ -95,7 +95,7 @@ The latest price of a stock and how much it moved since the previous close.
 **Setup:** set your key in the environment variable `ALPHA_VANTAGE_API_KEY` (for example in IntelliJ: *Run* → *Edit Configurations* → *Environment variables*). Never commit a key.
 
 ### Stock profiles dataset (Use Case 7)
-`src/main/resources/stock_profiles.csv` lists 6,063 active US stocks (NYSE, NASDAQ, NYSE American) with `symbol, name, sector, industry, market_cap, description`. Semantic search ("best selling oil stocks") embeds these profiles, so it needs no Alpha Vantage requests to know what each company does.
+`src/main/resources/stock_profiles.csv` lists 5,875 active US stocks (NYSE, NASDAQ, NYSE American) with `symbol, name, sector, industry, market_cap, description`. Semantic search ("best selling oil stocks") embeds these profiles, so it needs no Alpha Vantage requests to know what each company does.
 
 - **Source:** [FinanceDatabase](https://github.com/JerBouma/FinanceDatabase) by Jeroen Bouma, MIT License (see `src/main/resources/stock_profiles_LICENSE.txt`).
 - **Changes:** kept only non-delisted US common stocks (removed preferred shares, warrants, units, rights and notes), kept the first sentences of each description (at most about 300 characters), and blanked the generic placeholder descriptions.

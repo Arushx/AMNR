@@ -120,6 +120,24 @@ class ExplainMovementInteractorTest {
   }
 
   @Test
+  void sentimentFailureStillReportsThePriceMove() {
+    SentimentClassifier failing =
+        articles -> {
+          throw new SentimentUnavailableException("model missing");
+        };
+    news.articles = List.of(article("ACME reports loss", DAY1));
+
+    new ExplainMovementInteractor(
+            prices(DROP), news, failing, new EvidenceSelector(),
+            new ExtractiveMoveSummarizer(), presenter)
+        .execute(input(DAY1, DAY1.plusDays(2)));
+
+    assertEquals(-12.0, presenter.success.getChangePercent(), 1e-9);
+    assertEquals("", presenter.success.getSummary());
+    assertEquals("Could not analyse the news: model missing", presenter.success.getNewsError());
+  }
+
+  @Test
   void summarizerFailureShowsTheFailView() {
     MoveSummarizer failing =
         (movement, companyName, evidence) -> {

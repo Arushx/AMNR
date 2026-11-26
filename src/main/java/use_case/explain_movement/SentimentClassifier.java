@@ -7,8 +7,8 @@ import java.util.List;
 /**
  * Labels news articles as positive, negative or neutral.
  *
- * <p>It takes a whole list at once, so an implementation that calls a model (e.g. FinBERT) can
- * send the articles in batches instead of one by one.
+ * <p>It takes a whole list at once, so an implementation that runs a model (e.g. FinBERT) can
+ * process the articles in batches instead of one by one.
  */
 public interface SentimentClassifier {
 
@@ -17,6 +17,7 @@ public interface SentimentClassifier {
    *
    * @param articles the articles to label
    * @return one label per article, in the same order
+   * @throws SentimentUnavailableException if the articles can't be labeled
    */
-  List<Sentiment> classify(List<NewsArticle> articles);
+  List<Sentiment> classify(List<NewsArticle> articles) throws SentimentUnavailableException;
 }

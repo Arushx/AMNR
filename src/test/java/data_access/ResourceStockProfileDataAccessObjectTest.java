@@ -81,7 +81,7 @@ class ResourceStockProfileDataAccessObjectTest {
                 ResourceStockProfileDataAccessObject.DEFAULT_RESOURCE)
             .getProfiles();
 
-    assertTrue(profiles.size() > 6000);
+    assertTrue(profiles.size() > 5000);
     assertTrue(profiles.stream().anyMatch(p -> p.getSymbol().equals("XOM")));
   }
 }

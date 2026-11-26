@@ -14,7 +14,7 @@ import use_case.StockProfileDataAccessInterface;
 /**
  * Provides stock profiles from a CSV file bundled with the app (on the classpath).
  *
- * <p>The file ({@code stock_profiles.csv}, about 6,800 US stocks) ships inside the app, so it costs
+ * <p>The file ({@code stock_profiles.csv}, about 6,000 US stocks) ships inside the app, so it costs
  * no API requests and works offline. It is read once and then kept in memory.
  *
  * <p>Expected header: {@code symbol,name,sector,industry,market_cap,description}.

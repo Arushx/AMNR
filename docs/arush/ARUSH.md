@@ -698,3 +698,25 @@ So the category is a strong signal.
 - **Measure, don't guess:** a fixed test set with expected answers turns "it feels dumb" into numbers.
 - A bigger model isn't automatically better; how we *rank* matters more than which model embeds.
 - **Watch for overfitting:** our expected lists are famous companies, so a too-big size boost scores well on paper while giving silly results.
+
+---
+
+## 37. Size boost built (2026-11-26)
+
+**Added:** in `StockRanker`, relevance-ordered results now add a small boost by company size:
+
+| Mega | Large | Mid | Small | Micro, Nano, unknown |
+|---|---|---|---|---|
+| +0.08 | +0.06 | +0.04 | +0.02 | 0 |
+
+- **Only for relevance order.** "Biggest" and "small cap" already sort by size, and boosting big companies in a "smallest first" search would contradict it.
+- **Only for real matches.** A stock scoring 0 stays out; the boost can't make a non-match appear.
+- `sizeBoost(MarketCapClass)` steps down evenly using the enum order (Mega is first).
+- 3 new tests; 241 total, all passing.
+
+**Results:**
+- banks → **BAC** GBC **TD RY** EBC VRSA **SAN**
+- electric car makers → **TSLA** CENN **NIO XPEV**…
+- pharmaceutical companies → **AZN ABBV LLY**…
+
+**Learned:** the constant's comment records *why* 0.08 (the benchmark numbers), so a teammate won't change it at random.

@@ -577,3 +577,53 @@ Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → prese
 - **"best selling" can't be handled by embeddings.** It matched a SPAC literally named "BEST". The interactor will strip ranking words and sort by `MarketCapClass` instead.
 - **Limitation:** ONNX Runtime has no build for Intel Macs, only Apple Silicon, Windows x64 and Linux. Intel Mac teammates will need the keyword fallback.
 - **SHA-256 check:** never run a downloaded file without checking it's the exact one we expect.
+
+---
+
+## 34. Semantic Search interactor + Use Case 1 integration (2026-11-26)
+
+**Talked about:** the whole Use Case 7 engine except the Swing view, which waits until we're asked.
+
+**How a search flows:**
+```
+"best selling oil stocks"
+ → SearchQueryParser   topic "oil", order LARGEST ("best selling" removed, "stocks" is filler)
+ → StockRanker         score every profile (SemanticProfileMatcher; KeywordProfileMatcher if the model can't run)
+                       keep the 30 best matches, re-sort them biggest first (MarketCapClass)
+ → SemanticSearchInteractor → OutputData → Presenter → State/ViewModel
+ → XOM, COP, PBR, YPF, IMO …
+```
+
+**Added (use_case/semantic_search):**
+- `SortOrder`, `ParsedQuery`, `SearchQueryParser`: ranking words and filler are rules, not embeddings.
+- `ProfileMatcher` (**Strategy pattern**): `SemanticProfileMatcher` (cosine similarity) and `KeywordProfileMatcher` (counts words; the industry counts most).
+- `ProfileVectorDataAccessInterface`: profile vectors are computed once, then loaded. The key holds the model name plus a fingerprint of the data, so if either changes, they're recomputed.
+- `StockRanker`, `RankedStock`, `Ranking`; `SemanticSearchInteractor` with input/output data and boundaries.
+- `use_case/RelatedStockFinder`: an interface; `StockRanker` implements it.
+
+**Use Case 1 integration:**
+- `SearchStockInteractor` now takes an optional `RelatedStockFinder`.
+- When a search matches no ticker and no company name, it shows related stocks in the same "Did you mean" list, and picking one shows the stock as usual.
+- The old 4-argument constructor still works, so Matteo's code isn't broken.
+- From Use Case 7's own results, the view will pass the chosen ticker to `SearchStockController`.
+
+**Added elsewhere:**
+- `data_access/FileProfileVectorDataAccessObject`: binary file `data/profile_vectors.bin` (9 MB). This is UC7's persistence.
+- `interface_adapter/semantic_search`: controller, presenter (labels like "XOM  Exxon Mobil Corporation  ·  Oil, Gas & Fuels  ·  Mega Cap"), state, view model, listener.
+- `AppBuilder.addSemanticSearchUseCase()`: one shared `StockRanker` for UC1 and UC7. Not called from `Main` yet (no view).
+- Console demo: type a sentence, or `find <sentence>` for the full UC7 list, then a number.
+- Dataset: also removed preferred share classes (`BAC-PB`…). 5,875 stocks now.
+- 40 new tests; 232 total, all passing.
+
+**Real results:**
+- best selling oil stocks → XOM COP PBR YPF IMO
+- biggest banks → BAC TD SAN
+- electric car makers → … TSLA …
+- airlines → AAL JBLU UAL LUV
+
+**Speed:** the first ever search builds the index (about 16 s). After that, startup is about 1 s and each search about 10 ms.
+
+**Learned:**
+- **One ranker, two use cases:** shared logic lives in one class (no duplication). UC1 only sees the small `RelatedStockFinder` interface (ISP + DIP).
+- **Testing without the model:** `FakeEmbedder` makes 3-number "embeddings" by counting oil, tech and bank words, enough to test the logic in milliseconds.
+- **Stable sort:** after sorting by size, stocks of the same size keep their relevance order.

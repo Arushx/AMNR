@@ -15,7 +15,7 @@ By saving strategies and comparing their results against a buy-and-hold benchmar
 ---
 ## User Stories
 ### User Story 1
-As a retail investor, I want to search for a stock by ticker symbol or company name so I can quickly find its latest available quote.
+As a retail investor, I want to search for a stock by ticker symbol or company name or by statement so I can quickly find its latest available quote or related stocks
 ### User Story 2
 As a retail investor, I want to add and remove stocks from a saved watchlist so I can monitor them without searching for them each time.
 ### User Story 3

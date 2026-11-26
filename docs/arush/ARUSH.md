@@ -509,3 +509,20 @@ Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → prese
 - **`market_cap` class** (Mega, Large, Mid, Small, Micro, Nano) gives "biggest" or "best selling" something to sort by, using no API requests.
 - **`src/main/resources`:** Maven copies it onto the classpath, so Java can read the CSV with `getResourceAsStream`, wherever the app runs.
 - **Commits:** lots of small commits, one change each, with no Claude co-author line.
+
+---
+
+## 31. StockProfile entity (2026-11-26)
+
+**Added:**
+- `entity/MarketCapClass`: an enum `MEGA, LARGE, MID, SMALL, MICRO, NANO, UNKNOWN`.
+  - `fromLabel("Mega Cap")` turns the CSV text into the enum.
+  - Declared biggest first, so sorting by it puts the biggest companies first ("biggest oil stocks").
+- `entity/StockProfile`: symbol, name, sector, industry, marketCap, description; `hasDescription()`.
+- Tests for both: 7 new; 166 total, all passing.
+
+**Learned:**
+- **Why an enum and not a String:** the size class has a fixed set of values and an order. An enum makes typos impossible and gives the order for free (`compareTo`).
+- **Why entity layer:** a company profile is a core business idea. It imports nothing else and doesn't know about CSV files or Gemini.
+- **Same style as `StockListing`:** immutable (`final` fields, no setters), the symbol trimmed and uppercased, blank symbol rejected, missing text becomes "".
+- **Not added on purpose:** the "text to embed" format. That's a use-case decision, so it goes in the interactor's layer.

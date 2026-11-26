@@ -37,6 +37,12 @@ public class OnnxTextEmbedder implements TextEmbeddingGateway {
   private WordPieceTokenizer tokenizer;
 
   /**
+   * Set if the model can never run on this computer (no ONNX Runtime build for its processor), so
+   * later searches fail fast with the same message instead of trying again.
+   */
+  private EmbeddingUnavailableException unsupported;
+
+  /**
    * Creates the embedder. Nothing is loaded until the first call to {@link #embed}.
    *
    * @param files provides (and if needed downloads) the model and vocabulary files
@@ -84,6 +90,9 @@ public class OnnxTextEmbedder implements TextEmbeddingGateway {
     if (session != null) {
       return;
     }
+    if (unsupported != null) {
+      throw unsupported;
+    }
     try {
       tokenizer = WordPieceTokenizer.fromVocabFile(files.vocabFile());
       environment = OrtEnvironment.getEnvironment();
@@ -92,9 +101,16 @@ public class OnnxTextEmbedder implements TextEmbeddingGateway {
     } catch (IOException e) {
       throw new EmbeddingUnavailableException(
           "Could not get the embedding model files: " + e.getMessage(), e);
-    } catch (OrtException | UnsatisfiedLinkError e) {
-      throw new EmbeddingUnavailableException(
-          "The embedding model can't run on this computer: " + e.getMessage(), e);
+    } catch (OrtException e) {
+      throw new EmbeddingUnavailableException("The embedding model could not be loaded", e);
+    } catch (LinkageError | RuntimeException e) {
+      // ONNX Runtime's native library has no build for this computer. Java reports that as an
+      // UnsatisfiedLinkError the first time and as a NoClassDefFoundError every time after
+      // (both are LinkageErrors), so remember it rather than letting a later search crash.
+      unsupported =
+          new EmbeddingUnavailableException(
+              "the AI search model isn't supported on this computer", e);
+      throw unsupported;
     }
   }
 

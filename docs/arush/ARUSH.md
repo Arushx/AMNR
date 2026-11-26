@@ -438,3 +438,29 @@ Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → prese
 2. `execute()` returns void; results flow out through the presenter.
 3. The presenter does all the formatting (SRP).
 4. Picking a match = the same use case run again with that ticker, not a new use case.
+
+---
+
+## 28. Team status check (2026-11-23)
+
+**Merged into main:** my Use Case 1 (PR #27), plus everything before it.
+
+**Open PRs / branches:**
+
+| Who | Branch / PR | What | Has a view? |
+|---|---|---|---|
+| Andrew | `auth`, PR #26 | Login/signup, SQLite users, a generic `ViewModel<T>` + `ViewManagerModel` | no |
+| Andrew | `stock-watchlist`, PR #31 (includes auth) | Watchlist entity/use case/adapters, SQLite storage | no |
+| Matteo | `pair-analysis` (no PR yet) | Pair correlation (Use Case 3) + **`PairAnalysisView`**, wired in `AppBuilder`/`Main` | **yes** (the only one) |
+| Reuben | `use-case-5-news-summary`, PR #29 | News around moves via **Finnhub** (2nd API), sentiment lexicon | no (no controller/presenter yet either) |
+| Andrew | `update-project-desc`, PR #18 | README description | — |
+| Matteo | `uml_diagrams` | First PlantUML drafts | — |
+
+**Integration test:** main + watchlist + pair-analysis + news merged with **no conflicts**; **262 tests pass**, CheckStyle clean, **no Dependency Rule violations** across all code.
+
+**Problems spotted:**
+- Three different view-model styles (Andrew's generic `ViewModel<T>`, Matteo's own `PropertyChangeSupport`, my custom listener). We should pick one, probably Andrew's.
+- No screen-switching yet: nothing shows more than one view.
+- My terminal's `JAVA_HOME` points to Java 8, so `mvn` from the terminal fails; the project needs Java 11+.
+
+**Course rule to remember:** each lead builds the UI for **their own** use case. I shouldn't write teammates' views; I can build mine and a shared navigation shell everyone plugs into (agreed with the team first).

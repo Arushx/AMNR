@@ -491,3 +491,21 @@ Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → prese
 | UI | result list; picking one calls Use Case 1's search |
 
 **Still to decide:** where the embeddings come from (a local Java model vs a hosted API) and where the stock profiles come from.
+
+---
+
+## 30. Stock profiles dataset (2026-11-26)
+
+**Talked about:** where to get a description for every stock, so semantic search knows what each company does.
+
+**Added:** `src/main/resources/stock_profiles.csv` (1.9 MB), its licence file, and a README section.
+- **Source:** FinanceDatabase (GitHub, MIT licence, so we must keep the licence file and credit it).
+- **Columns:** `symbol, name, sector, industry, market_cap, description`.
+- **6,759 active US stocks** (NYSE, NASDAQ, NYSE American). Only 244 have no description, and those still have a sector and industry.
+- 6,129 of the stocks in our Alpha Vantage listing have a real description.
+
+**Learned:**
+- **Trimming:** descriptions were up to about 2,000 characters. I kept the first sentences, at most about 300 characters, which cut the embedding work to roughly 440k tokens (about 15 minutes on Gemini's free tier, once).
+- **`market_cap` class** (Mega, Large, Mid, Small, Micro, Nano) gives "biggest" or "best selling" something to sort by, using no API requests.
+- **`src/main/resources`:** Maven copies it onto the classpath, so Java can read the CSV with `getResourceAsStream`, wherever the app runs.
+- **Commits:** lots of small commits, one change each, with no Claude co-author line.

@@ -25,6 +25,22 @@ class SearchQueryParserTest {
   }
 
   @Test
+  void mostExpensiveMeansBiggestCompanies() {
+    ParsedQuery parsed = parser.parse("most expensive tech stocks");
+
+    assertEquals("tech", parsed.getTopic());
+    assertEquals(SortOrder.LARGEST, parsed.getSortOrder());
+  }
+
+  @Test
+  void cheapMeansSmallestCompanies() {
+    ParsedQuery parsed = parser.parse("cheap gold miners");
+
+    assertEquals("gold miners", parsed.getTopic());
+    assertEquals(SortOrder.SMALLEST, parsed.getSortOrder());
+  }
+
+  @Test
   void fillerWordsAreDropped() {
     ParsedQuery parsed = parser.parse("show me companies that make computer chips");
 

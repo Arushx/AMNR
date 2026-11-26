@@ -14,6 +14,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import use_case.PriceHistoryDataAccessInterface;
 import use_case.QuoteDataAccessInterface;
+import use_case.RelatedStockFinder;
 import use_case.StockDataUnavailableException;
 import use_case.StockListingDataAccessInterface;
 
@@ -220,5 +221,72 @@ class SearchStockInteractorTest {
 
     assertEquals("daily request limit reached", presenter.error);
     assertNull(presenter.success);
+  }
+
+  /** Suggests fixed stocks for any sentence, or fails, and records what it was asked. */
+  private static class FakeRelatedFinder implements RelatedStockFinder {
+    final List<String> queries = new ArrayList<>();
+    List<StockListing> related =
+        List.of(new StockListing("XOM", "Exxon Mobil Corporation", ""),
+            new StockListing("CVX", "Chevron Corporation", ""));
+    boolean unavailable;
+
+    @Override
+    public List<StockListing> findRelated(String query, int limit)
+        throws StockDataUnavailableException {
+      queries.add(query);
+      if (unavailable) {
+        throw new StockDataUnavailableException("profiles missing");
+      }
+      return related;
+    }
+  }
+
+  private SearchStockInteractor withFinder(FakeRelatedFinder finder) {
+    return new SearchStockInteractor(listings, data, data, presenter, finder);
+  }
+
+  @Test
+  void sentenceWithNoNameMatchOffersRelatedStocks() {
+    FakeRelatedFinder finder = new FakeRelatedFinder();
+
+    withFinder(finder).execute(new SearchStockInputData("best selling oil stocks"));
+
+    assertEquals(List.of("best selling oil stocks"), finder.queries);
+    assertEquals(List.of("XOM", "CVX"), presenter.matches.getSymbols());
+    assertEquals(List.of("Exxon Mobil Corporation", "Chevron Corporation"),
+        presenter.matches.getNames());
+    assertNull(presenter.error);
+    assertTrue(data.requested.isEmpty());
+  }
+
+  @Test
+  void nameMatchesAreShownWithoutAskingForRelatedStocks() {
+    FakeRelatedFinder finder = new FakeRelatedFinder();
+
+    withFinder(finder).execute(new SearchStockInputData("apple"));
+
+    assertTrue(finder.queries.isEmpty());
+    assertEquals("AAPL", presenter.matches.getSymbols().get(0));
+  }
+
+  @Test
+  void noRelatedStocksStillReportsNoMatch() {
+    FakeRelatedFinder finder = new FakeRelatedFinder();
+    finder.related = List.of();
+
+    withFinder(finder).execute(new SearchStockInputData("no such company"));
+
+    assertEquals("No stocks match \"no such company\".", presenter.error);
+  }
+
+  @Test
+  void failingRelatedFinderStillReportsNoMatch() {
+    FakeRelatedFinder finder = new FakeRelatedFinder();
+    finder.unavailable = true;
+
+    withFinder(finder).execute(new SearchStockInputData("no such company"));
+
+    assertEquals("No stocks match \"no such company\".", presenter.error);
   }
 }

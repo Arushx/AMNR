@@ -15,7 +15,7 @@ By saving strategies and comparing their results against a buy-and-hold benchmar
 ---
 ## User Stories
 ### User Story 1
-As a retail investor, I want to search for a stock by ticker symbol or company name so I can quickly find its latest available quote.
+As a retail investor, I want to search for a stock by ticker symbol or company name or by statement so I can quickly find its latest available quote or related stocks
 ### User Story 2
 As a retail investor, I want to add and remove stocks from a saved watchlist so I can monitor them without searching for them each time.
 ### User Story 3
@@ -93,6 +93,12 @@ The latest price of a stock and how much it moved since the previous close.
 **Limits:** the free key allows 25 requests per day and 1 request per second. The client spaces requests at least 1.1 seconds apart, and tests use saved responses instead of the live API.
 
 **Setup:** set your key in the environment variable `ALPHA_VANTAGE_API_KEY` (for example in IntelliJ: *Run* → *Edit Configurations* → *Environment variables*). Never commit a key.
+
+### Stock profiles dataset (Use Case 7)
+`src/main/resources/stock_profiles.csv` lists 5,875 active US stocks (NYSE, NASDAQ, NYSE American) with `symbol, name, sector, industry, market_cap, description`. Semantic search ("best selling oil stocks") embeds these profiles, so it needs no Alpha Vantage requests to know what each company does.
+
+- **Source:** [FinanceDatabase](https://github.com/JerBouma/FinanceDatabase) by Jeroen Bouma, MIT License (see `src/main/resources/stock_profiles_LICENSE.txt`).
+- **Changes:** kept only non-delisted US common stocks (removed preferred shares, warrants, units, rights and notes), kept the first sentences of each description (at most about 300 characters), and blanked the generic placeholder descriptions.
 ---
 ## Design Diagrams
 ### UML Class Diagram

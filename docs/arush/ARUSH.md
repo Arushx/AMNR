@@ -438,3 +438,321 @@ Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → prese
 2. `execute()` returns void; results flow out through the presenter.
 3. The presenter does all the formatting (SRP).
 4. Picking a match = the same use case run again with that ticker, not a new use case.
+
+---
+
+## 28. Team status check (2026-11-23)
+
+**Merged into main:** my Use Case 1 (PR #27), plus everything before it.
+
+**Open PRs / branches:**
+
+| Who | Branch / PR | What | Has a view? |
+|---|---|---|---|
+| Andrew | `auth`, PR #26 | Login/signup, SQLite users, a generic `ViewModel<T>` + `ViewManagerModel` | no |
+| Andrew | `stock-watchlist`, PR #31 (includes auth) | Watchlist entity/use case/adapters, SQLite storage | no |
+| Matteo | `pair-analysis` (no PR yet) | Pair correlation (Use Case 3) + **`PairAnalysisView`**, wired in `AppBuilder`/`Main` | **yes** (the only one) |
+| Reuben | `use-case-5-news-summary`, PR #29 | News around moves via **Finnhub** (2nd API), sentiment lexicon | no (no controller/presenter yet either) |
+| Andrew | `update-project-desc`, PR #18 | README description | — |
+| Matteo | `uml_diagrams` | First PlantUML drafts | — |
+
+**Integration test:** main + watchlist + pair-analysis + news merged with **no conflicts**; **262 tests pass**, CheckStyle clean, **no Dependency Rule violations** across all code.
+
+**Problems spotted:**
+- Three different view-model styles (Andrew's generic `ViewModel<T>`, Matteo's own `PropertyChangeSupport`, my custom listener). We should pick one, probably Andrew's.
+- No screen-switching yet: nothing shows more than one view.
+- My terminal's `JAVA_HOME` points to Java 8, so `mvn` from the terminal fails; the project needs Java 11+.
+
+**Course rule to remember:** each lead builds the UI for **their own** use case. I shouldn't write teammates' views; I can build mine and a shared navigation shell everyone plugs into (agreed with the team first).
+
+---
+
+## 29. Use Case 7 plan: semantic search ("best selling oil stocks")
+
+**Talked about:** how to find stocks from a sentence, not just a ticker or name.
+
+**Learned:**
+- **Embedding:** a model turns text into a list of numbers (a vector). Texts with similar meaning get vectors pointing the same way, so "oil" lands near "crude", "petroleum" and "energy".
+- **Cosine similarity:** how close two vectors point; 1 means the same meaning, 0 means unrelated.
+- **Asymmetric search:** a short query against longer stock descriptions. We embed every description once and save it; at search time we embed only the query.
+- **A name alone isn't enough.** "Exxon Mobil Corp" says nothing about oil. Each stock needs a profile text: sector, industry and a short description.
+- **The sentence has two parts:**
+  - the *topic* ("oil"), handled by the embedding;
+  - the *ranking intent* ("best selling", "cheapest", "most traded"), handled by a rule-based parser that maps it to an entity field to sort by.
+- **The request budget matters.** A quote costs 1 of our 25 daily requests, so we only fetch live prices for the top 5 results.
+
+**Plan (CA):**
+
+| Layer | Pieces |
+|---|---|
+| `entity` | `StockProfile` (symbol, name, sector, industry, description), cosine-similarity maths |
+| `use_case/semantic_search` | Input/Output data and boundaries, interactor, `TextEmbeddingGateway` interface (DIP: the interactor doesn't know which model), profile data-access interface, query-intent parser |
+| `data_access` | the embedding model (Java, on our CPU, or an API), a file DAO for profiles plus saved vectors |
+| UI | result list; picking one calls Use Case 1's search |
+
+**Still to decide:** where the embeddings come from (a local Java model vs a hosted API) and where the stock profiles come from.
+
+---
+
+## 30. Stock profiles dataset (2026-11-26)
+
+**Talked about:** where to get a description for every stock, so semantic search knows what each company does.
+
+**Added:** `src/main/resources/stock_profiles.csv` (1.9 MB), its licence file, and a README section.
+- **Source:** FinanceDatabase (GitHub, MIT licence, so we must keep the licence file and credit it).
+- **Columns:** `symbol, name, sector, industry, market_cap, description`.
+- **6,759 active US stocks** (NYSE, NASDAQ, NYSE American). Only 244 have no description, and those still have a sector and industry.
+- 6,129 of the stocks in our Alpha Vantage listing have a real description.
+
+**Learned:**
+- **Trimming:** descriptions were up to about 2,000 characters. I kept the first sentences, at most about 300 characters, which cut the embedding work to roughly 440k tokens (about 15 minutes on Gemini's free tier, once).
+- **`market_cap` class** (Mega, Large, Mid, Small, Micro, Nano) gives "biggest" or "best selling" something to sort by, using no API requests.
+- **`src/main/resources`:** Maven copies it onto the classpath, so Java can read the CSV with `getResourceAsStream`, wherever the app runs.
+- **Commits:** lots of small commits, one change each, with no Claude co-author line.
+
+---
+
+## 31. StockProfile entity (2026-11-26)
+
+**Added:**
+- `entity/MarketCapClass`: an enum `MEGA, LARGE, MID, SMALL, MICRO, NANO, UNKNOWN`.
+  - `fromLabel("Mega Cap")` turns the CSV text into the enum.
+  - Declared biggest first, so sorting by it puts the biggest companies first ("biggest oil stocks").
+- `entity/StockProfile`: symbol, name, sector, industry, marketCap, description; `hasDescription()`.
+- Tests for both: 7 new; 166 total, all passing.
+
+**Learned:**
+- **Why an enum and not a String:** the size class has a fixed set of values and an order. An enum makes typos impossible and gives the order for free (`compareTo`).
+- **Why entity layer:** a company profile is a core business idea. It imports nothing else and doesn't know about CSV files or Gemini.
+- **Same style as `StockListing`:** immutable (`final` fields, no setters), the symbol trimmed and uppercased, blank symbol rejected, missing text becomes "".
+- **Not added on purpose:** the "text to embed" format. That's a use-case decision, so it goes in the interactor's layer.
+
+---
+
+## 32. Profile loader (2026-11-26)
+
+**Added:**
+- `use_case/StockProfileDataAccessInterface`: `List<StockProfile> getProfiles()`, which throws `StockDataUnavailableException`.
+- `data_access/CsvLineParser`: splits one CSV line properly.
+  - Commas inside `"..."` stay in the field ("Oil, Gas & Fuels").
+  - A doubled `""` inside quotes means one `"`.
+  - An unclosed quote throws an error.
+- `data_access/ResourceStockProfileDataAccessObject`: reads `stock_profiles.csv` from the classpath, checks the header, builds a `StockProfile` per line, and keeps the list in memory.
+- A test fixture `profiles/stock_profiles_sample.csv` (4 tricky rows) and 12 new tests. One test loads the real file (more than 6,000 profiles, XOM present). 178 tests in total, all passing.
+
+**Learned:**
+- **DIP again:** the interface sits in `use_case`, and the DAO in `data_access` implements it from below. The interactor will never know the data comes from a CSV.
+- **SRP:** the CSV splitting is its own class, so the DAO only maps fields to an entity.
+- **Classpath resource vs file:** `getResourceAsStream("/stock_profiles.csv")` finds the file inside the app (from `src/main/resources`), unlike `data/listing_status.csv`, which is a local file.
+- **Fail loudly with the line number:** a broken data file gives "malformed at line N", not a confusing crash later.
+
+---
+
+## 33. Local embedding model (2026-11-26)
+
+**Decided:** run the model inside Java instead of calling Gemini. No key, no limits, works offline. Alpha Vantage already covers the "uses an API" requirement.
+
+**Added:**
+- `use_case/semantic_search/TextEmbeddingGateway`: `float[] embed(String)` and `modelName()`, plus `EmbeddingUnavailableException`.
+- `data_access/WordPieceTokenizer`: pure Java, turns text into the model's token ids.
+  - lowercase, strip accents, split off punctuation;
+  - split words into vocabulary pieces ("petrochemicals" → `petro ##chemical ##s`);
+  - wrap in `[CLS] … [SEP]`.
+- `data_access/MiniLmModelFiles`: downloads the 23 MB quantized model and `vocab.txt` once.
+  - Comes from a fixed Hugging Face commit, into `data/models/` (git-ignored).
+  - Checks each file's SHA-256 fingerprint before using it.
+- `data_access/OnnxTextEmbedder`: tokenize → run the model (384 numbers per token) → average them ("mean pooling") → scale to length 1.
+- `pom.xml`: ONNX Runtime 1.31.1 (Microsoft; runs the model).
+- Cleaned the dataset: removed preferred shares, warrants, units, rights and notes (they cluttered results). 6,063 stocks now.
+- 14 new tests (192 total, all passing). The real-model test only runs if the model is downloaded.
+
+**Results from the real model:**
+- All 6,063 profiles embed in about 16 seconds.
+- "oil stocks" → DHT, CRK, GPOR, XOM… (oil producers and tankers).
+- "banks" → banks.
+- "computer chips" → INTC, TSM, UMC…
+
+**Learned:**
+- **Embedding = meaning as numbers.** Similar texts point the same way; the dot product of length-1 vectors is the cosine similarity.
+- **"best selling" can't be handled by embeddings.** It matched a SPAC literally named "BEST". The interactor will strip ranking words and sort by `MarketCapClass` instead.
+- **Limitation:** ONNX Runtime has no build for Intel Macs, only Apple Silicon, Windows x64 and Linux. Intel Mac teammates will need the keyword fallback.
+- **SHA-256 check:** never run a downloaded file without checking it's the exact one we expect.
+
+---
+
+## 34. Semantic Search interactor + Use Case 1 integration (2026-11-26)
+
+**Talked about:** the whole Use Case 7 engine except the Swing view, which waits until we're asked.
+
+**How a search flows:**
+```
+"best selling oil stocks"
+ → SearchQueryParser   topic "oil", order LARGEST ("best selling" removed, "stocks" is filler)
+ → StockRanker         score every profile (SemanticProfileMatcher; KeywordProfileMatcher if the model can't run)
+                       keep the 30 best matches, re-sort them biggest first (MarketCapClass)
+ → SemanticSearchInteractor → OutputData → Presenter → State/ViewModel
+ → XOM, COP, PBR, YPF, IMO …
+```
+
+**Added (use_case/semantic_search):**
+- `SortOrder`, `ParsedQuery`, `SearchQueryParser`: ranking words and filler are rules, not embeddings.
+- `ProfileMatcher` (**Strategy pattern**): `SemanticProfileMatcher` (cosine similarity) and `KeywordProfileMatcher` (counts words; the industry counts most).
+- `ProfileVectorDataAccessInterface`: profile vectors are computed once, then loaded. The key holds the model name plus a fingerprint of the data, so if either changes, they're recomputed.
+- `StockRanker`, `RankedStock`, `Ranking`; `SemanticSearchInteractor` with input/output data and boundaries.
+- `use_case/RelatedStockFinder`: an interface; `StockRanker` implements it.
+
+**Use Case 1 integration:**
+- `SearchStockInteractor` now takes an optional `RelatedStockFinder`.
+- When a search matches no ticker and no company name, it shows related stocks in the same "Did you mean" list, and picking one shows the stock as usual.
+- The old 4-argument constructor still works, so Matteo's code isn't broken.
+- From Use Case 7's own results, the view will pass the chosen ticker to `SearchStockController`.
+
+**Added elsewhere:**
+- `data_access/FileProfileVectorDataAccessObject`: binary file `data/profile_vectors.bin` (9 MB). This is UC7's persistence.
+- `interface_adapter/semantic_search`: controller, presenter (labels like "XOM  Exxon Mobil Corporation  ·  Oil, Gas & Fuels  ·  Mega Cap"), state, view model, listener.
+- `AppBuilder.addSemanticSearchUseCase()`: one shared `StockRanker` for UC1 and UC7. Not called from `Main` yet (no view).
+- Console demo: type a sentence, or `find <sentence>` for the full UC7 list, then a number.
+- Dataset: also removed preferred share classes (`BAC-PB`…). 5,875 stocks now.
+- 40 new tests; 232 total, all passing.
+
+**Real results:**
+- best selling oil stocks → XOM COP PBR YPF IMO
+- biggest banks → BAC TD SAN
+- electric car makers → … TSLA …
+- airlines → AAL JBLU UAL LUV
+
+**Speed:** the first ever search builds the index (about 16 s). After that, startup is about 1 s and each search about 10 ms.
+
+**Learned:**
+- **One ranker, two use cases:** shared logic lives in one class (no duplication). UC1 only sees the small `RelatedStockFinder` interface (ISP + DIP).
+- **Testing without the model:** `FakeEmbedder` makes 3-number "embeddings" by counting oil, tech and bank words, enough to test the logic in milliseconds.
+- **Stable sort:** after sorting by size, stocks of the same size keep their relevance order.
+
+---
+
+## 35. Fixing "most expensive tech stocks" (2026-11-26)
+
+**Problem:** the demo returned ROC, PARA, TDY… (tiny companies with "Technologies" in their name).
+1. "most expensive" wasn't a ranking phrase, so it stayed in the topic.
+2. "tech" against whole profiles mostly matches *names* containing "Technologies".
+
+**Experiment:** I compared the search against the 86 sector and industry names:
+- "tech" → Information Technology
+- "gold mining" → Mining & Metals
+- "electric car" → Automobiles
+
+So the category is a strong signal.
+
+**Changes:**
+- **`SemanticProfileMatcher`:** score = ½ × (topic vs whole profile) + ½ × (topic vs the closer of its sector or industry name). The category vectors (86) are saved with the profile vectors.
+- **`StockRanker`:** for "biggest" or "smallest", it re-sorts every match within 0.12 of the best score (at least 30, at most 300), not a fixed 30.
+  - A broad topic ("tech") gets a big pool that includes the giants.
+  - A narrow one ("oil") stays small, so size can't drag in unrelated companies.
+- **`SearchQueryParser`:**
+  - "most expensive", "priciest", "popular" → biggest; "cheap", "cheapest" → smallest; "most" is filler.
+  - "Expensive" means company value (market cap), because share prices would cost 1 API request per stock.
+- 6 new tests; 238 total, all passing.
+
+**Results after the fix:**
+
+| Search | Results |
+|---|---|
+| most expensive tech stocks | PLTR INTC MU AMD MSFT TXN PANW |
+| best selling oil stocks | XOM SHEL CVX COP |
+| biggest banks | BAC RY HSBC JPM TD |
+
+**Learned:**
+- Judge search quality by running real queries, then change one thing at a time and compare.
+- The Java `WARNING: restricted method` lines come from running on a Java newer than 11. They're harmless; the VM option `--enable-native-access=ALL-UNNAMED` hides them.
+
+---
+
+## 36. Model comparison: MiniLM vs mpnet (2026-11-26)
+
+**Question:** would `all-mpnet-base-v2` (the bigger model) understand searches better?
+
+**Test:**
+- 18 searches (oil, banks, airlines, chips, EVs, games, gold mining, streaming, social media, cloud software, fast food, pharma, payments, travel, home improvement, cybersecurity, railroads, "makers of iphones").
+- Each search has a list of companies a person would expect (e.g. airlines → AAL DAL UAL LUV…).
+- Same ranking code for both models; I counted the expected companies in the top 10.
+
+| Model | Download | Build index | Expected in top 10 | Right #1 |
+|---|---|---|---|---|
+| MiniLM (ours) | 23 MB | 15 s | 41 | 8/18 |
+| mpnet | 110 MB | 67 s | 40 | 6/18 |
+
+**Result: a tie.** mpnet isn't better here and is 5× bigger and slower, so we keep MiniLM.
+
+**The real problem I found:** both models return real but little-known companies (GBC and NARA are genuine banks) ahead of the famous ones people expect. A small score boost for bigger companies fixes most of that:
+
+| Size boost (Mega gets the full boost, smaller classes less) | Expected in top 10 | Right #1 |
+|---|---|---|
+| none | 41 | 8/18 |
+| 0.06 | 59 | 15/18 |
+| **0.08** | **66** | **16/18** |
+| 0.14 | 71 | 17/18, but unrelated giants creep in ("makers of iphones" → LLY, ABBV) |
+
+**0.08 looks like the sweet spot** (not built yet).
+
+**Learned:**
+- **Measure, don't guess:** a fixed test set with expected answers turns "it feels dumb" into numbers.
+- A bigger model isn't automatically better; how we *rank* matters more than which model embeds.
+- **Watch for overfitting:** our expected lists are famous companies, so a too-big size boost scores well on paper while giving silly results.
+
+---
+
+## 37. Size boost built (2026-11-26)
+
+**Added:** in `StockRanker`, relevance-ordered results now add a small boost by company size:
+
+| Mega | Large | Mid | Small | Micro, Nano, unknown |
+|---|---|---|---|---|
+| +0.08 | +0.06 | +0.04 | +0.02 | 0 |
+
+- **Only for relevance order.** "Biggest" and "small cap" already sort by size, and boosting big companies in a "smallest first" search would contradict it.
+- **Only for real matches.** A stock scoring 0 stays out; the boost can't make a non-match appear.
+- `sizeBoost(MarketCapClass)` steps down evenly using the enum order (Mega is first).
+- 3 new tests; 241 total, all passing.
+
+**Results:**
+- banks → **BAC** GBC **TD RY** EBC VRSA **SAN**
+- electric car makers → **TSLA** CENN **NIO XPEV**…
+- pharmaceutical companies → **AZN ABBV LLY**…
+
+**Learned:** the constant's comment records *why* 0.08 (the benchmark numbers), so a teammate won't change it at random.
+
+---
+
+## 38. Does the AI model run on every computer? (2026-11-26)
+
+**Question:** "wait, it doesn't run on every PC?"
+
+**Why:** ONNX Runtime isn't pure Java. Inside its jar is a compiled C++ library for each operating system and processor, and Java loads the one matching the computer.
+
+**What I found, by listing what's inside each version's jar:**
+
+| Version | Windows (Intel/AMD) | Mac (Apple Silicon) | Mac (Intel) | Linux |
+|---|---|---|---|---|
+| 1.31.1 (what we had) | yes | yes | **no** | yes |
+| 1.24 and newer | yes | varies | **no** | yes |
+| **1.23.2** (now) | yes | yes | **yes** | yes |
+
+Still unsupported: Windows on ARM laptops (rare). Those get the keyword fallback.
+
+**A real bug the simulation found:** I faked an unsupported computer by starting Java with `-Dos.arch=x86_64`.
+- The first search fell back to keywords correctly.
+- The second search **crashed**: Java throws `UnsatisfiedLinkError` the first time a native library fails, then `NoClassDefFoundError` every time after, and we only caught the first.
+
+**Fix (`OnnxTextEmbedder`):**
+- Catch `LinkageError` (the parent of both) and remember the failure in a field.
+- Every later search immediately reports "the AI search model isn't supported on this computer", so the ranker uses keyword matching.
+
+**Tested:**
+- normal Apple Silicon: full AI results;
+- simulated Intel and Windows ARM: keyword results on every search, no crash;
+- 241 tests pass.
+
+**Learned:**
+- "Pure Java" libraries run anywhere; libraries with native code only run where they ship a build. Always check the supported platforms before adding one.
+- Simulating a failure (`-Dos.arch`) can find bugs that tests on your own computer never will.
+- Catching an exception once isn't enough if the next call throws a *different* one.

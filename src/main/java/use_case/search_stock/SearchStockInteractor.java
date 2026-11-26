@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import use_case.PriceHistoryDataAccessInterface;
 import use_case.QuoteDataAccessInterface;
+import use_case.RelatedStockFinder;
 import use_case.StockDataUnavailableException;
 import use_case.StockListingDataAccessInterface;
 
@@ -21,6 +22,8 @@ import use_case.StockListingDataAccessInterface;
  *   <li>A known ticker ("AAPL") goes straight to its quote and history.
  *   <li>Anything else ("apple") is searched as a company name, and the top matches are shown for
  *       the user to pick from. Picking one searches again with its ticker.
+ *   <li>A sentence that matches no company name ("best selling oil stocks") is passed to a
+ *       {@link RelatedStockFinder} (semantic search), and its results are offered the same way.
  * </ul>
  *
  * <p>It only knows the data access interfaces, never where the data comes from.
@@ -37,9 +40,10 @@ public class SearchStockInteractor implements SearchStockInputBoundary {
   private final QuoteDataAccessInterface quoteDataAccess;
   private final PriceHistoryDataAccessInterface historyDataAccess;
   private final SearchStockOutputBoundary presenter;
+  private final RelatedStockFinder relatedStockFinder;
 
   /**
-   * Creates the interactor.
+   * Creates the interactor without related-stock suggestions.
    *
    * @param listingDataAccess provides the list of every stock, for ticker and name lookup
    * @param quoteDataAccess provides the latest quote
@@ -51,10 +55,29 @@ public class SearchStockInteractor implements SearchStockInputBoundary {
       QuoteDataAccessInterface quoteDataAccess,
       PriceHistoryDataAccessInterface historyDataAccess,
       SearchStockOutputBoundary presenter) {
+    this(listingDataAccess, quoteDataAccess, historyDataAccess, presenter, null);
+  }
+
+  /**
+   * Creates the interactor.
+   *
+   * @param listingDataAccess provides the list of every stock, for ticker and name lookup
+   * @param quoteDataAccess provides the latest quote
+   * @param historyDataAccess provides the daily price history
+   * @param presenter receives the result
+   * @param relatedStockFinder suggests stocks for sentences that match no name; may be null
+   */
+  public SearchStockInteractor(
+      StockListingDataAccessInterface listingDataAccess,
+      QuoteDataAccessInterface quoteDataAccess,
+      PriceHistoryDataAccessInterface historyDataAccess,
+      SearchStockOutputBoundary presenter,
+      RelatedStockFinder relatedStockFinder) {
     this.listingDataAccess = listingDataAccess;
     this.quoteDataAccess = quoteDataAccess;
     this.historyDataAccess = historyDataAccess;
     this.presenter = presenter;
+    this.relatedStockFinder = relatedStockFinder;
   }
 
   @Override
@@ -92,7 +115,28 @@ public class SearchStockInteractor implements SearchStockInputBoundary {
       // Not in our US list and no name matches: it may still be a valid ticker elsewhere.
       showStock(upper);
     } else {
-      presenter.prepareFailView("No stocks match \"" + query + "\".");
+      showRelatedOrFail(query);
+    }
+  }
+
+  /** Offers stocks related to a sentence, or reports that nothing matched. */
+  private void showRelatedOrFail(String query) {
+    final String noMatch = "No stocks match \"" + query + "\".";
+    if (relatedStockFinder == null) {
+      presenter.prepareFailView(noMatch);
+      return;
+    }
+    final List<StockListing> related;
+    try {
+      related = relatedStockFinder.findRelated(query, MAX_MATCHES);
+    } catch (StockDataUnavailableException e) {
+      presenter.prepareFailView(noMatch);
+      return;
+    }
+    if (related.isEmpty()) {
+      presenter.prepareFailView(noMatch);
+    } else {
+      showMatches(query, related);
     }
   }
 

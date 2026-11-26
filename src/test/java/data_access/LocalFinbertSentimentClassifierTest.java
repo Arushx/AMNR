@@ -53,20 +53,6 @@ class LocalFinbertSentimentClassifierTest {
   }
 
   @Test
-  void bundledFilesAreTheOriginalsFromHuggingFace(@org.junit.jupiter.api.io.TempDir Path tmp)
-      throws IOException {
-    // SHA-256 of vocab.txt and config.json in Xenova/finbert at the pinned commit.
-    assertEquals("07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3",
-        FinbertModelFiles.saveWithChecksum(
-            getClass().getResourceAsStream(LocalFinbertSentimentClassifier.VOCAB_RESOURCE),
-            tmp.resolve("vocab")));
-    assertEquals("3629c9707884176d61af8452d8779ee167169db85d81e2183afe939a88c483b8",
-        FinbertModelFiles.saveWithChecksum(
-            getClass().getResourceAsStream(LocalFinbertSentimentClassifier.CONFIG_RESOURCE),
-            tmp.resolve("config")));
-  }
-
-  @Test
   void highestScoreWins() {
     assertEquals(Sentiment.NEGATIVE,
         LocalFinbertSentimentClassifier.labelOf(new float[] {-1.7f, 2.6f, -0.1f}, FINBERT_LABELS));

@@ -627,3 +627,40 @@ Plus `AppBuilder.addSearchStockUseCase()`, which builds client → DAO → prese
 - **One ranker, two use cases:** shared logic lives in one class (no duplication). UC1 only sees the small `RelatedStockFinder` interface (ISP + DIP).
 - **Testing without the model:** `FakeEmbedder` makes 3-number "embeddings" by counting oil, tech and bank words, enough to test the logic in milliseconds.
 - **Stable sort:** after sorting by size, stocks of the same size keep their relevance order.
+
+---
+
+## 35. Fixing "most expensive tech stocks" (2026-11-26)
+
+**Problem:** the demo returned ROC, PARA, TDY… (tiny companies with "Technologies" in their name).
+1. "most expensive" wasn't a ranking phrase, so it stayed in the topic.
+2. "tech" against whole profiles mostly matches *names* containing "Technologies".
+
+**Experiment:** I compared the search against the 86 sector and industry names:
+- "tech" → Information Technology
+- "gold mining" → Mining & Metals
+- "electric car" → Automobiles
+
+So the category is a strong signal.
+
+**Changes:**
+- **`SemanticProfileMatcher`:** score = ½ × (topic vs whole profile) + ½ × (topic vs the closer of its sector or industry name). The category vectors (86) are saved with the profile vectors.
+- **`StockRanker`:** for "biggest" or "smallest", it re-sorts every match within 0.12 of the best score (at least 30, at most 300), not a fixed 30.
+  - A broad topic ("tech") gets a big pool that includes the giants.
+  - A narrow one ("oil") stays small, so size can't drag in unrelated companies.
+- **`SearchQueryParser`:**
+  - "most expensive", "priciest", "popular" → biggest; "cheap", "cheapest" → smallest; "most" is filler.
+  - "Expensive" means company value (market cap), because share prices would cost 1 API request per stock.
+- 6 new tests; 238 total, all passing.
+
+**Results after the fix:**
+
+| Search | Results |
+|---|---|
+| most expensive tech stocks | PLTR INTC MU AMD MSFT TXN PANW |
+| best selling oil stocks | XOM SHEL CVX COP |
+| biggest banks | BAC RY HSBC JPM TD |
+
+**Learned:**
+- Judge search quality by running real queries, then change one thing at a time and compare.
+- The Java `WARNING: restricted method` lines come from running on a Java newer than 11. They're harmless; the VM option `--enable-native-access=ALL-UNNAMED` hides them.
